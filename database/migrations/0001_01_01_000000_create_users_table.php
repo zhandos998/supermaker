@@ -17,6 +17,18 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            // $table->timestamps();
+
+            $table->string('phone')->unique(); // Номер телефона
+            $table->string('nickname')->nullable(); // Ник пользователя
+            $table->string('city_id'); // Город
+            // $table->string('role')->default('user'); // Роль: user, master, admin
+            $table->string('fio')->nullable(); // ФИО мастера
+            $table->string('iin')->nullable(); // ИИН мастера
+            $table->string('store_name')->nullable(); // Название магазина (для мастеров)
+            $table->string('company_type_id')->nullable(); // ИП или ТОО
+            $table->decimal('balance', 8, 2)->default(0); // Баланс
+
             $table->rememberToken();
             $table->timestamps();
         });
