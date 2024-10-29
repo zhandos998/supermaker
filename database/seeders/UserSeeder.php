@@ -18,8 +18,12 @@ class UserSeeder extends Seeder
         $master = Role::where('slug', 'master')->first();
 
         $user1 = new User();
-        $user1->fio = 'admin';
+        // $user1->fio = 'admin';
         $user1->username = 'admin';
+
+        $user1->firstname = 'admin';
+        $user1->lastname = 'admin';
+
         $user1->email = 'admin';
         $user1->phone = '87771234567';
         $user1->iin = '111111111111';
@@ -30,8 +34,12 @@ class UserSeeder extends Seeder
         $user1->roles()->attach($admin);
 
         $user2 = new User();
-        $user2->fio = 'Master';
+        // $user2->fio = 'Master';
         $user2->username = 'Master';
+
+        $user2->firstname = 'Master';
+        $user2->lastname = 'Master';
+
         $user2->email = 'master';
         $user2->phone = '87771234568';
         $user2->iin = '111111111112';

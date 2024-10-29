@@ -22,7 +22,8 @@ return new class extends Migration
             $table->string('username')->unique(); // Ник пользователя
             $table->string('city_id'); // Город
             // $table->string('role')->default('user'); // Роль: user, master, admin
-            $table->string('fio'); // ФИО мастера
+            $table->string('firstname'); // ФИО мастера
+            $table->string('lastname'); // ФИО мастера
             $table->string('iin',12)->unique(); // ИИН мастера
             // $table->string('store_name')->nullable(); // Название магазина (для мастеров)
             // $table->string('company_type_id')->nullable(); // ИП или ТОО
