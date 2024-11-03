@@ -16,6 +16,7 @@ class UserSeeder extends Seeder
     {
         $admin = Role::where('slug','admin')->first();
         $master = Role::where('slug', 'master')->first();
+        $user = Role::where('slug', 'user')->first();
 
         $user1 = new User();
         // $user1->fio = 'admin';
@@ -48,5 +49,23 @@ class UserSeeder extends Seeder
         $user2->password = bcrypt('123456');
         $user2->save();
         $user2->roles()->attach($master);
+
+
+
+        $user2 = new User();
+        // $user2->fio = 'User';
+        $user2->username = 'User';
+
+        $user2->firstname = 'User';
+        $user2->lastname = 'User';
+
+        $user2->email = 'user';
+        $user2->phone = '87771234569';
+        $user2->iin = '111111111113';
+        $user2->city_id = 1;
+
+        $user2->password = bcrypt('123456');
+        $user2->save();
+        $user2->roles()->attach($user);
     }
 }

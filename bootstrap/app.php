@@ -12,6 +12,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        $middleware->alias([
+            'role'  =>  \App\Http\Middleware\RoleMiddleware::class, // наш мидлвар роли
+        ]);
         // $middleware->append(\App\Http\Middleware\RoleMiddleware::class);
 
         // $middleware->append(\Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class);

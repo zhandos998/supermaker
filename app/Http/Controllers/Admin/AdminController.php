@@ -29,35 +29,4 @@ class AdminController extends Controller
         return view('admin.home');
     }
 
-    // public function view_feedbacks()
-    // {
-    //     $feedbacks = DB::table('feedbacks')
-    //         ->get();
-    //     return view('admin.feedbacks.feedbacks',['feedbacks'=>$feedbacks]);
-    // }
-
-    // public function view_feedback(Request $request, $id)
-    // {
-    //     if ($request->isMethod('post')){
-    //         if ($request->status=="on"){
-    //             $status=1;
-    //         }
-    //         else
-    //         {
-    //             $status=0;
-    //         }
-    //         DB::table('feedbacks')
-    //             ->where('id',$id)
-    //             ->update(['status'=>$status]);
-    //         return redirect('admin/feedbacks');
-    //     }
-    //     $feedback = DB::table('feedbacks')
-    //         ->where('id',$id)
-    //         ->first();
-
-    //     return view('admin.feedbacks.feedback',
-    //         [
-    //             'feedback'=>$feedback,
-    //         ]);
-    // }
 }

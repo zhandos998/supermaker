@@ -16,21 +16,14 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
-            // $table->timestamps();
-
             $table->string('phone')->unique(); // Номер телефона
             $table->string('username')->unique(); // Ник пользователя
             $table->string('city_id'); // Город
-            // $table->string('role')->default('user'); // Роль: user, master, admin
             $table->string('firstname'); // ФИО мастера
             $table->string('lastname'); // ФИО мастера
             $table->string('iin',12)->unique(); // ИИН мастера
-            // $table->string('store_name')->nullable(); // Название магазина (для мастеров)
-            // $table->string('company_type_id')->nullable(); // ИП или ТОО
-            // $table->decimal('balance', 8, 2)->default(0); // Баланс
-            $table->boolean('is_visible')->default(1)->nullable(); // ИИН мастера
+            $table->boolean('is_visible')->default(1); // ИИН мастера
             $table->string('photo_url')->nullable(); // ФИО мастера
-
             $table->rememberToken();
             $table->timestamps();
         });

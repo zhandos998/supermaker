@@ -1,0 +1,11 @@
+php artisan make:model Survey -s
+php artisan make:migration create_stores_table
+
+
+php artisan make:model Survey -s
+php artisan make:model Question -s
+php artisan make:model DefaultAnswer -s
+php artisan make:model UserAnswer -s
+
+
+php artisan make:middleware RoleMiddleware

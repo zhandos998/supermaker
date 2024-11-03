@@ -4,11 +4,11 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use Symfony\Component\HttpFoundation\Response;
+use Illuminate\Support\Facades\Auth;
 
 class RoleMiddleware
 {
-     /**
+    /**
      * Handle an incoming request.
      * @param $request
      * @param Closure $next
@@ -16,13 +16,13 @@ class RoleMiddleware
      * @param null $permission
      * @return mixed
      */
-    public function handle($request, Closure $next, $role, $permission = null)
+    public function handle($request, Closure $next, $role)
     {
         if (count(explode('|', $role))>1) {
             $roles = explode('|', $role);
             $b = false;
             foreach ($roles as $role) {
-                $b=$b||auth()->user()->hasRole($role);
+                $b=$b||Auth::user()->hasRole($role);
                 if ($b) break;
             }
             // print($b);
@@ -31,10 +31,7 @@ class RoleMiddleware
                 abort(404);
             }
         }
-        else if(!auth()->user()->hasRole($role)) {
-            abort(404);
-        }
-        if($permission !== null && !auth()->user()->can($permission)) {
+        else if(!Auth::user()->hasRole($role)) {
             abort(404);
         }
         return $next($request);
