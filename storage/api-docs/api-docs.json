@@ -187,6 +187,176 @@
                 }
             }
         },
+        "/api/auth/send-verification-code": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Отправить код верификации на телефон",
+                "description": "Отправляет SMS с кодом верификации на указанный номер телефона пользователя",
+                "operationId": "sendVerificationCode",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "phone"
+                                ],
+                                "properties": {
+                                    "phone": {
+                                        "description": "Номер телефона для отправки кода верификации",
+                                        "type": "string",
+                                        "example": "+1234567890"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Код верификации успешно отправлен",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Verification code sent successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Ошибка валидации",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Invalid phone number format"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Не удалось отправить код верификации",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Failed to send verification code"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/auth/verify-account": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Верификация аккаунта по телефону и коду",
+                "description": "Проверяет код верификации и отмечает аккаунт как верифицированный, если код корректен.",
+                "operationId": "verifyAccount",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "phone",
+                                    "verification_code"
+                                ],
+                                "properties": {
+                                    "phone": {
+                                        "description": "Номер телефона пользователя",
+                                        "type": "string",
+                                        "example": "+1234567890"
+                                    },
+                                    "verification_code": {
+                                        "description": "Код верификации, отправленный на телефон",
+                                        "type": "integer",
+                                        "example": 123456
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Аккаунт успешно верифицирован",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Account verified successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Ошибка валидации или неверный код",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Invalid verification code or phone number"
+                                        },
+                                        "errors": {
+                                            "type": "object",
+                                            "nullable": true
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Server error"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/login": {
             "post": {
                 "tags": [
@@ -201,14 +371,14 @@
                         "application/json": {
                             "schema": {
                                 "required": [
-                                    "email",
+                                    "phone",
                                     "password"
                                 ],
                                 "properties": {
-                                    "email": {
+                                    "phone": {
                                         "type": "string",
-                                        "format": "email",
-                                        "example": "johndoe@example.com"
+                                        "format": "",
+                                        "example": "+1234567890"
                                     },
                                     "password": {
                                         "type": "string",
@@ -318,7 +488,7 @@
                     "Auth"
                 ],
                 "summary": "Send password reset link",
-                "description": "Sends a password reset link to the user's email",
+                "description": "Sends a password reset link to the user's phone",
                 "operationId": "sendResetLink",
                 "requestBody": {
                     "required": true,
@@ -326,13 +496,13 @@
                         "application/json": {
                             "schema": {
                                 "required": [
-                                    "email"
+                                    "phone"
                                 ],
                                 "properties": {
-                                    "email": {
+                                    "phone": {
                                         "type": "string",
-                                        "format": "email",
-                                        "example": "user@example.com"
+                                        "format": "phone",
+                                        "example": "+123456789"
                                     }
                                 },
                                 "type": "object"
@@ -349,7 +519,7 @@
                                     "properties": {
                                         "message": {
                                             "type": "string",
-                                            "example": "Ссылка на сброс пароля отправлена на ваш email."
+                                            "example": "Ссылка на сброс пароля отправлена на ваш phone."
                                         }
                                     },
                                     "type": "object"
@@ -363,11 +533,11 @@
                             "application/json": {
                                 "schema": {
                                     "properties": {
-                                        "email": {
+                                        "phone": {
                                             "type": "array",
                                             "items": {
                                                 "type": "string",
-                                                "example": "The email field is required."
+                                                "example": "The phone field is required."
                                             }
                                         }
                                     },

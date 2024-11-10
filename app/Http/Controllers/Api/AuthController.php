@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\Http;
+use Mobizon\MobizonApi;
 
 class AuthController extends Controller
 {
@@ -113,7 +115,166 @@ class AuthController extends Controller
         // Создаем пользователя
         $user = User::create($validatedData);
 
+        $verificationCode = random_int(100000, 999999);
+
+        // Сохранение кода в поле `verification_code`
+        // $user->update(['verification_code' => $verificationCode]);
+        $user->verification_code = $verificationCode;
+        $user->save();
+
+        // dd($user);
+
+        // Отправка кода через Mobizon API
+        $this->sendVerificationCode($user->phone, $verificationCode);
+
         return response()->json(['message' => 'User registered successfully', 'user' => $user]);
+    }
+
+    /**
+     * Helper function to send verification code via Mobizon.
+     */
+    /**
+ * @OA\Post(
+ *     path="/api/auth/send-verification-code",
+ *     summary="Отправить код верификации на телефон",
+ *     description="Отправляет SMS с кодом верификации на указанный номер телефона пользователя",
+ *     operationId="sendVerificationCode",
+ *     tags={"Auth"},
+ *     @OA\RequestBody(
+ *         required=true,
+ *         @OA\JsonContent(
+ *             required={"phone"},
+ *             @OA\Property(property="phone", type="string", example="+1234567890", description="Номер телефона для отправки кода верификации")
+ *         )
+ *     ),
+ *     @OA\Response(
+ *         response=200,
+ *         description="Код верификации успешно отправлен",
+ *         @OA\JsonContent(
+ *             @OA\Property(property="message", type="string", example="Verification code sent successfully")
+ *         )
+ *     ),
+ *     @OA\Response(
+ *         response=400,
+ *         description="Ошибка валидации",
+ *         @OA\JsonContent(
+ *             @OA\Property(property="error", type="string", example="Invalid phone number format")
+ *         )
+ *     ),
+ *     @OA\Response(
+ *         response=500,
+ *         description="Не удалось отправить код верификации",
+ *         @OA\JsonContent(
+ *             @OA\Property(property="error", type="string", example="Failed to send verification code")
+ *         )
+ *     )
+ * )
+ */
+    private function sendVerificationCode($phone, $code)
+    {
+
+        $api = new MobizonApi(env('MOBIZON_API_KEY'), 'api.mobizon.kz');
+        // API call to send a message
+        if ($api->call('message',
+        'sendSMSMessage',
+        array(
+            // Recipient international phone number
+            'recipient' => $phone,
+            // Message text
+            'text' => "Your verification code is: $code",
+            // Alphaname is optional, if you don't have registered alphaname, just skip this parameter and your message will be sent with our free common alphaname, if it's available for this direction.
+            'from' => 'SuperMakers',
+            // Message will be expired after 10 min
+            'params[validity]' => 10
+        ))
+        ) {
+        // Get message ID assigned by our system to request it's delivery report later.
+        $messageId = $api->getData('messageId');
+
+        if (!$messageId) {
+            // Message is not accepted, see error code and data for details.
+        }
+        // Message has been accepted by API.
+        } else {
+        // An error occurred while sending message
+        echo '[' . $api->getCode() . '] ' . $api->getMessage() . 'See details below:' . PHP_EOL . print_r($api->getData(), true) . PHP_EOL;
+        }
+
+        // $response = Http::get("http://api.mobizon.kz/service/message/sendsmsmessage", [
+        //     'recipient' => $phone,
+        //     'text' => "Your verification code is: $code",
+        //     'apiKey' => env('MOBIZON_API_KEY'),
+        // ]);
+
+        // if ($response->failed()) {
+        //     throw new \Exception('Failed to send verification code');
+        // }
+    }
+
+
+    /**
+     * Verify the user's account with a verification code.
+     */
+    /**
+ * @OA\Post(
+ *     path="/api/auth/verify-account",
+ *     summary="Верификация аккаунта по телефону и коду",
+ *     description="Проверяет код верификации и отмечает аккаунт как верифицированный, если код корректен.",
+ *     operationId="verifyAccount",
+ *     tags={"Auth"},
+ *     @OA\RequestBody(
+ *         required=true,
+ *         @OA\JsonContent(
+ *             required={"phone", "verification_code"},
+ *             @OA\Property(property="phone", type="string", example="+1234567890", description="Номер телефона пользователя"),
+ *             @OA\Property(property="verification_code", type="integer", example=123456, description="Код верификации, отправленный на телефон")
+ *         )
+ *     ),
+ *     @OA\Response(
+ *         response=200,
+ *         description="Аккаунт успешно верифицирован",
+ *         @OA\JsonContent(
+ *             @OA\Property(property="message", type="string", example="Account verified successfully")
+ *         )
+ *     ),
+ *     @OA\Response(
+ *         response=400,
+ *         description="Ошибка валидации или неверный код",
+ *         @OA\JsonContent(
+ *             @OA\Property(property="message", type="string", example="Invalid verification code or phone number"),
+ *             @OA\Property(property="errors", type="object", nullable=true)
+ *         )
+ *     ),
+ *     @OA\Response(
+ *         response=500,
+ *         description="Внутренняя ошибка сервера",
+ *         @OA\JsonContent(
+ *             @OA\Property(property="message", type="string", example="Server error")
+ *         )
+ *     )
+ * )
+ */
+    public function verifyAccount(Request $request)
+    {
+        $validatedData = Validator::make($request->all(), [
+            'phone' => 'required|string',
+            'verification_code' => 'required|integer',
+        ]);
+
+        if ($validatedData->fails()) {
+            return response()->json($validatedData->errors(), 400);
+        }
+
+        $user = User::where('phone', $request->phone)->where('verification_code', $request->verification_code)->first();
+
+        if (!$user) {
+            return response()->json(['message' => 'Invalid verification code or phone number'], 400);
+        }
+
+        // Обновляем статус на "верифицирован" и удаляем код
+        $user->update(['is_verified' => 1, 'verification_code' => null]);
+
+        return response()->json(['message' => 'Account verified successfully']);
     }
 
     /**
@@ -128,8 +289,8 @@ class AuthController extends Controller
      *         @OA\MediaType(
      *             mediaType="application/json",
      *             @OA\Schema(
-     *                 required={"email", "password"},
-     *                 @OA\Property(property="email", type="string", format="email", example="johndoe@example.com"),
+     *                 required={"phone", "password"},
+     *                 @OA\Property(property="phone", type="string", format="", example="+1234567890"),
      *                 @OA\Property(property="password", type="string", example="password123")
      *             )
      *         )
@@ -161,7 +322,7 @@ class AuthController extends Controller
     {
         $validatedData = Validator::make($request->all(), [
 
-            'email' => 'required|string|email',
+            'phone' => 'required|string',
             'password' => 'required|string',
         ]);
 
@@ -169,11 +330,11 @@ class AuthController extends Controller
             return response()->json($validatedData->errors(),400);
         }
         $validatedData = $validatedData->validate();
-        $user = User::where('email', $request->email)->first();
+        $user = User::where('phone', $request->phone)->first();
 
         if (! $user || ! Hash::check($request->password, $user->password)) {
             throw ValidationException::withMessages([
-                'email' => ['The provided credentials are incorrect.'],
+                'phone' => ['The provided credentials are incorrect.'],
             ]);
         }
 
@@ -217,29 +378,29 @@ class AuthController extends Controller
      * @OA\Post(
      *     path="/api/password/reset-link",
      *     summary="Send password reset link",
-     *     description="Sends a password reset link to the user's email",
+     *     description="Sends a password reset link to the user's phone",
      *     operationId="sendResetLink",
      *     tags={"Auth"},
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
-     *             required={"email"},
-     *             @OA\Property(property="email", type="string", format="email", example="user@example.com")
+     *             required={"phone"},
+     *             @OA\Property(property="phone", type="string", format="phone", example="+123456789")
      *         )
      *     ),
      *     @OA\Response(
      *         response=200,
      *         description="Password reset link sent successfully",
      *         @OA\JsonContent(
-     *             @OA\Property(property="message", type="string", example="Ссылка на сброс пароля отправлена на ваш email.")
+     *             @OA\Property(property="message", type="string", example="Ссылка на сброс пароля отправлена на ваш phone.")
      *         )
      *     ),
      *     @OA\Response(
      *         response=400,
      *         description="Validation error",
      *         @OA\JsonContent(
-     *             @OA\Property(property="email", type="array",
-     *                 @OA\Items(type="string", example="The email field is required.")
+     *             @OA\Property(property="phone", type="array",
+     *                 @OA\Items(type="string", example="The phone field is required.")
      *             )
      *         )
      *     ),

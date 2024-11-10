@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->string('email')->unique();
+            $table->string('email')->unique()->nullable();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->string('phone')->unique(); // Номер телефона
@@ -22,8 +22,10 @@ return new class extends Migration
             $table->string('firstname'); // ФИО мастера
             $table->string('lastname'); // ФИО мастера
             $table->string('iin',12)->unique(); // ИИН мастера
-            $table->boolean('is_visible')->default(1); // ИИН мастера
+            $table->boolean('is_visible')->default(1);
             $table->string('photo_url')->nullable(); // ФИО мастера
+            $table->string('verification_code')->nullable();
+            $table->integer('is_verified',1)->default(0);
             $table->rememberToken();
             $table->timestamps();
         });

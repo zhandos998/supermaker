@@ -11,6 +11,7 @@
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.9",
         "laravel/ui": "^4.5",
+        "mobizon/mobizon-php": "^2.0",
         "zircote/swagger-php": "^4.11"
     },
     "require-dev": {

@@ -9,3 +9,6 @@ php artisan make:model UserAnswer -s
 
 
 php artisan make:middleware RoleMiddleware
+
+
+php artisan l5-swagger:generate
