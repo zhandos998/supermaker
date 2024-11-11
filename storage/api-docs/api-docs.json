@@ -1424,11 +1424,17 @@
                 ],
                 "summary": "Get a list of favorites",
                 "description": "Returns a list of all favorite items for the authenticated user.",
-                "operationId": "bc433e786ab5a0bec81c53c578e0b6aa",
+                "operationId": "",
                 "responses": {
                     "200": {
                         "description": "Successful operation"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
                     }
+                },
+                "security": {
+                    "bearerAuth": {}
                 }
             },
             "post": {
@@ -3969,6 +3975,21 @@
                         "description": "Video not found"
                     }
                 }
+            }
+        }
+    },
+    "components": {
+        "securitySchemes": {
+            "bearerAuth": {
+                "type": "http",
+                "bearerFormat": "JWT",
+                "scheme": "bearer"
+            },
+            "sanctum": {
+                "type": "apiKey",
+                "description": "Enter token in format (Bearer <token>)",
+                "name": "Authorization",
+                "in": "header"
             }
         }
     },

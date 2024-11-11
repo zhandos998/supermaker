@@ -19,6 +19,13 @@ use Illuminate\Support\Facades\Validator;
  *      description="SuperMakers",
  *      url="http://127.0.0.1:8000"
  *  ),
+ *
+ * @OA\SecurityScheme(
+ *     securityScheme="bearerAuth",
+ *     type="http",
+ *     scheme="bearer",
+ *     bearerFormat="JWT",
+ * )
  */
 class UserController extends Controller
 {

@@ -17,14 +17,21 @@ class FavoriteController extends Controller
      *     tags={"Favorites"},
      *     summary="Get a list of favorites",
      *     description="Returns a list of all favorite items for the authenticated user.",
+     *     security={"bearerAuth": {}},
+     *     operationId="",
      *     @OA\Response(
      *         response=200,
      *         description="Successful operation"
-     *     )
+     *     ),
+    *     @OA\Response(
+    *         response=401,
+    *         description="Unauthorized"
+    *     )
      * )
      */
     public function index(Request $request)
     {
+        // dd($request->user()->id);
         $favorites = Favorite::where('user_id', $request->user()->id)->get();
         return response()->json($favorites, Response::HTTP_OK);
     }
