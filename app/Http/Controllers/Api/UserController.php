@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Validator;
  * ),
  *  @OA\Server(
  *      description="SuperMakers",
- *      url="http://127.0.0.1:8000"
+ *      url="https://supermakers.pro"
  *  ),
  *
  * @OA\SecurityScheme(

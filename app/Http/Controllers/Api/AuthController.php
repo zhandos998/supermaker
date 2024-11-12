@@ -172,6 +172,7 @@ class AuthController extends Controller
  */
     private function sendVerificationCode($phone, $code)
     {
+        $formattedPhone = $this->formatPhoneNumber($phone);
 
         $api = new MobizonApi(env('MOBIZON_API_KEY'), 'api.mobizon.kz');
         // API call to send a message
@@ -179,13 +180,15 @@ class AuthController extends Controller
         'sendSMSMessage',
         array(
             // Recipient international phone number
-            'recipient' => $phone,
+            'recipient' => $formattedPhone,
             // Message text
-            'text' => "Your verification code is: $code",
+            'text' => "Ваш код верификации: $code",
             // Alphaname is optional, if you don't have registered alphaname, just skip this parameter and your message will be sent with our free common alphaname, if it's available for this direction.
-            'from' => 'SuperMakers',
+
+            // 'from' => 'SuperMakers',
+
             // Message will be expired after 10 min
-            'params[validity]' => 10
+            'params[validity]' => 1440
         ))
         ) {
         // Get message ID assigned by our system to request it's delivery report later.
@@ -196,8 +199,10 @@ class AuthController extends Controller
         }
         // Message has been accepted by API.
         } else {
+            // echo $phone;
+            // echo "Your verification code is: $code";
         // An error occurred while sending message
-        echo '[' . $api->getCode() . '] ' . $api->getMessage() . 'See details below:' . PHP_EOL . print_r($api->getData(), true) . PHP_EOL;
+            echo '[' . $api->getCode() . '] ' . $api->getMessage() . 'See details below:' . PHP_EOL . print_r($api->getData(), true) . PHP_EOL;
         }
 
         // $response = Http::get("http://api.mobizon.kz/service/message/sendsmsmessage", [
@@ -211,6 +216,14 @@ class AuthController extends Controller
         // }
     }
 
+    public function formatPhoneNumber($phone)
+    {
+        // Убираем все символы, кроме цифр
+        $phone = preg_replace('/\D/', '', $phone);
+
+        // Оставляем только последние 10 цифр и добавляем "7" в начало
+        return '7' . substr($phone, -10);
+    }
 
     /**
      * Verify the user's account with a verification code.
@@ -340,7 +353,7 @@ class AuthController extends Controller
 
         $token = $user->createToken('api-token')->plainTextToken;
 
-        return response()->json(['Authorization' => 'Bearer ' + $token]);
+        return response()->json(['Authorization' => 'Bearer ' . $token]);
     }
 
     /**

@@ -15,7 +15,11 @@
     <link href="https://fonts.bunny.net/css?family=Nunito" rel="stylesheet">
 
     <!-- Scripts -->
-    @vite(['resources/sass/app.scss', 'resources/js/app.js', 'resources/css/custom.css'])
+    {{-- <script type="module" src="/@vite/client"></script> --}}
+    <link rel="stylesheet" href="/resources/sass/app.scss">
+    <script type="module" src="/resources/js/app.js"></script>
+    <link rel="stylesheet" href="/resources/css/custom.css">
+    {{-- @vite(['/resources/sass/app.scss', '/resources/js/app.js', '/resources/css/custom.css']) --}}
 
 </head>
 <body>
@@ -34,7 +38,7 @@
                     <ul class="navbar-nav me-auto">
 
                         <li class="nav-item">
-                            <a class="nav-link" href="http://127.0.0.1:8000/api/documentation">{{ __('Swagger') }}</a>
+                            <a class="nav-link" href="/api/documentation">{{ __('Swagger') }}</a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" href="https://supermakers.pro/phpmyadmin">{{ __('PhpMyAdmin') }}</a>
