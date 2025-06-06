@@ -14,6 +14,7 @@ class CityController extends Controller
      * @OA\Get(
      *     path="/api/cities",
      *     tags={"Cities"},
+     *     security={{"sanctum": {}}},
      *     summary="Get list of cities",
      *     description="Returns a list of all cities.",
      *     @OA\Response(
@@ -32,6 +33,7 @@ class CityController extends Controller
      * @OA\Get(
      *     path="/api/cities/{id}",
      *     tags={"Cities"},
+     *     security={{"sanctum": {}}},
      *     summary="Get a city by ID",
      *     description="Returns a single city",
      *     @OA\Parameter(
@@ -63,6 +65,7 @@ class CityController extends Controller
      * @OA\Post(
      *     path="/api/cities",
      *     tags={"Cities"},
+     *     security={{"sanctum": {}}},
      *     summary="Create a new city",
      *     description="Adds a new city to the database",
      *     @OA\RequestBody(
@@ -99,6 +102,7 @@ class CityController extends Controller
      * @OA\Put(
      *     path="/api/cities/{id}",
      *     tags={"Cities"},
+     *     security={{"sanctum": {}}},
      *     summary="Update an existing city",
      *     description="Updates city details by ID",
      *     @OA\Parameter(
@@ -147,6 +151,7 @@ class CityController extends Controller
      * @OA\Delete(
      *     path="/api/cities/{id}",
      *     tags={"Cities"},
+     *     security={{"sanctum": {}}},
      *     summary="Delete a city",
      *     description="Deletes a city by ID",
      *     @OA\Parameter(

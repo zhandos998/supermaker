@@ -14,6 +14,7 @@ class CountryController extends Controller
      * @OA\Get(
      *     path="/api/countries",
      *     tags={"Countries"},
+     *     security={{"sanctum": {}}},
      *     summary="Get list of countries",
      *     description="Returns a list of all countries.",
      *     @OA\Response(
@@ -32,6 +33,7 @@ class CountryController extends Controller
      * @OA\Get(
      *     path="/api/countries/{id}",
      *     tags={"Countries"},
+     *     security={{"sanctum": {}}},
      *     summary="Get a country by ID",
      *     description="Returns a single country",
      *     @OA\Parameter(
@@ -63,6 +65,7 @@ class CountryController extends Controller
      * @OA\Post(
      *     path="/api/countries",
      *     tags={"Countries"},
+     *     security={{"sanctum": {}}},
      *     summary="Create a new country",
      *     description="Adds a new country to the database",
      *     @OA\RequestBody(
@@ -99,6 +102,7 @@ class CountryController extends Controller
      * @OA\Put(
      *     path="/api/countries/{id}",
      *     tags={"Countries"},
+     *     security={{"sanctum": {}}},
      *     summary="Update an existing country",
      *     description="Updates country details by ID",
      *     @OA\Parameter(
@@ -147,6 +151,7 @@ class CountryController extends Controller
      * @OA\Delete(
      *     path="/api/countries/{id}",
      *     tags={"Countries"},
+     *     security={{"sanctum": {}}},
      *     summary="Delete a country",
      *     description="Deletes a country by ID",
      *     @OA\Parameter(

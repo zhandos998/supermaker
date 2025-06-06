@@ -20,7 +20,9 @@ class User extends Authenticatable
      * @var array<int, string>
      */
     protected $fillable = [
-        'firstname', 'lastname', 'email', 'phone', 'username', 'city_id', 'iin', 'is_visible', 'photo_url', 'password',
+        'firstname', 'lastname', 'phone', 'username', 'city_id',
+        'iin', 'is_visible', 'photo_url', 'wallet','videos_count',
+        'verification_code','is_verified','company_type','company_name','description'
     ];
 
     /**
@@ -29,8 +31,8 @@ class User extends Authenticatable
      * @var array<int, string>
      */
     protected $hidden = [
-        'password',
         'remember_token',
+        'verification_code',
     ];
 
     /**
@@ -42,7 +44,40 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
-            'password' => 'hashed',
         ];
     }
+    
+    protected $appends = ['role'];
+
+    public function getRoleAttribute()
+    {
+        return $this->roles()->first()?->slug;
+    }
+
+    // Связь "многие ко многим" с ролями
+    public function roles()
+    {
+        return $this->belongsToMany(Role::class, 'users_roles', 'user_id', 'role_id');
+    }
+
+    public function subscriptions()
+    {
+        return $this->hasMany(Subscription::class, 'user_id');
+    }
+
+    public function likes()
+    {
+        return $this->hasMany(Like::class, 'user_id');
+    }
+
+    public function ratings()
+    {
+        return $this->hasMany(Rating::class, 'master_id');
+    }
+
+    public function payments()
+    {
+        return $this->hasMany(Payment::class, 'user_id');
+    }
+
 }

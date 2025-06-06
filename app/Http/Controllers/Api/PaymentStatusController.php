@@ -12,8 +12,9 @@ class PaymentStatusController extends Controller
 {
     /**
      * @OA\Get(
-     *     path="/api/payment-statuses",
+     *     path="/api/payment_statuses",
      *     tags={"Payment Statuses"},
+     *     security={{"sanctum": {}}},
      *     summary="Get a list of payment statuses",
      *     description="Returns a list of all payment statuses.",
      *     @OA\Response(
@@ -30,7 +31,7 @@ class PaymentStatusController extends Controller
 
     /**
      * @OA\Get(
-     *     path="/api/payment-statuses/{id}",
+     *     path="/api/payment_statuses/{id}",
      *     tags={"Payment Statuses"},
      *     summary="Get a payment status by ID",
      *     description="Returns a single payment status",
@@ -61,8 +62,9 @@ class PaymentStatusController extends Controller
 
     /**
      * @OA\Post(
-     *     path="/api/payment-statuses",
+     *     path="/api/payment_statuses",
      *     tags={"Payment Statuses"},
+     *     security={{"sanctum": {}}},
      *     summary="Create a new payment status",
      *     description="Adds a new payment status to the database",
      *     @OA\RequestBody(
@@ -97,8 +99,9 @@ class PaymentStatusController extends Controller
 
     /**
      * @OA\Put(
-     *     path="/api/payment-statuses/{id}",
+     *     path="/api/payment_statuses/{id}",
      *     tags={"Payment Statuses"},
+     *     security={{"sanctum": {}}},
      *     summary="Update an existing payment status",
      *     description="Updates payment status details by ID",
      *     @OA\Parameter(
@@ -145,8 +148,9 @@ class PaymentStatusController extends Controller
 
     /**
      * @OA\Delete(
-     *     path="/api/payment-statuses/{id}",
+     *     path="/api/payment_statuses/{id}",
      *     tags={"Payment Statuses"},
+     *     security={{"sanctum": {}}},
      *     summary="Delete a payment status",
      *     description="Deletes a payment status by ID",
      *     @OA\Parameter(

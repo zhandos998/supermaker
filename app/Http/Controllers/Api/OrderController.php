@@ -3,28 +3,398 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Option;
 use App\Models\Order; // Ensure you have an Order model
+use App\Models\OrderStatus;
+use App\Models\QuickOrder;
+use App\Models\Variable;
+use App\Models\User;
+use App\Models\UserSurvey;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
 class OrderController extends Controller
 {
     /**
+     * @OA\Post(
+     *     path="/api/orders/quick_order/response/{order_id}",
+     *     tags={"Quick Orders"},
+     *     security={{"sanctum": {}}},
+     *     summary="Respond to a quick order",
+     *     description="Updates the selected order status to 14 and others with the same quick_order_id to 13.",
+     *     @OA\Parameter(
+     *         name="order_id",
+     *         in="path",
+     *         required=true,
+     *         description="ID of the selected order",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Response submitted, order updated",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="message", type="string", example="Response submitted, order updated.")
+     *         )
+     *     ),
+     *     @OA\Response(response=422, description="Validation error")
+     * )
+     */
+    public function QuickOrderResponse(Request $request, $order_id)
+    {
+//        $validated = $request->validate([
+//            'master_id' => 'required|exists:users,id',
+//        ]);
+
+        // Находим выбранный заказ
+        $selectedOrder = Order::findOrFail($order_id);
+
+        // Обновляем статус выбранного заказа на 14
+        $selectedOrder->update([
+//            'master_id' => $validated['master_id'],
+            'status_id' => 14,
+        ]);
+
+        // Обновляем статус остальных заказов с таким же quick_order_id на 13
+        Order::where('quick_order_id', $selectedOrder->quick_order_id)
+            ->where('id', '!=', $selectedOrder->id) // Исключаем выбранный заказ
+            ->update(['status_id' => 13]);
+
+        return response()->json(['message' => 'Response submitted, order updated.']);
+    }
+
+    /**
+     * @OA\Post(
+     *     path="/api/orders/quick_order/{user_survey_id}",
+     *     tags={"Quick Orders"},
+     *     security={{"sanctum": {}}},
+     *     summary="Create a quick order",
+     *     description="Creates a quick order and assigns it to masters.",
+     *     @OA\Parameter(
+     *         name="user_survey_id",
+     *         in="path",
+     *         required=false,
+     *         description="Optional survey ID",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Quick order created successfully",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="message", type="string", example="Quick order created and sent to masters.")
+     *         )
+     *     ),
+     *     @OA\Response(response=422, description="Validation error")
+     * )
+     */
+    public function QuickOrder($user_survey_id = null)
+    {
+        // $validated = $request->validate([
+        //     'user_id' => 'required|exists:users,id',
+        // ]);
+//        print($user_survey_id);
+        // Создаем запись для быстрого заказа
+        $quickOrder = QuickOrder::create([
+            'user_id' => auth('sanctum')->id(),
+            'group_iter' => 0,
+            'refresh_time' => Carbon::now(),
+            'responded' => false,
+        ]);
+        UserSurvey::where('id',$user_survey_id)
+            ->update([
+                'quick_order_id'=>$quickOrder->id,
+            ]);
+
+
+        // Отправляем заказы мастерам
+        $this->SendQuickOrdersByUserId($quickOrder->user_id);
+
+
+        return response()->json(['message' => 'Quick order created and sent to masters.']);
+    }
+
+    public function SendQuickOrdersByUserId($userId = 0)
+    {
+        $quick_order_iteration = Variable::where('id',8)->first()['value']; // 3 За раз отправлят к N мастерам заявку(ордер)
+        // Находим активные быстрые заказы
+        $quickOrders = QuickOrder::where('created_at', '<=', Carbon::now()->subHours(24))
+            ->where('is_active',1)
+            ->get();
+        foreach ($quickOrders as $quickOrder) {
+            $quickOrder->is_active = 0;
+            $quickOrder->save();
+        }
+
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/api/orders/GetOrderByMasterID/{id}",
+     *     tags={"Orders"},
+     *     security={{"sanctum": {}}},
+     *     summary="Get an order by master ID",
+     *     description="Returns a single order",
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         description="ID of the order to retrieve",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Order found"
+     *     ),
+     *     @OA\Response(response=404, description="Order not found")
+     * )
+     */
+    public function GetOrderByMasterID($id)
+    {
+        $order = Order::where('master_id',$id)
+            ->orderBy('updated_at', 'desc')
+            ->get();
+
+        if (!$order) {
+            return response()->json(['message' => 'Order not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        return response()->json($order, Response::HTTP_OK);
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/api/orders/GetOrderByUserID/{id}",
+     *     tags={"Orders"},
+     *     security={{"sanctum": {}}},
+     *     summary="Get an order by master ID",
+     *     description="Returns a single order",
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         description="ID of the order to retrieve",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Order found"
+     *     ),
+     *     @OA\Response(response=404, description="Order not found")
+     * )
+     */
+    public function GetOrderByUserID($id)
+    {
+        $order = Order::where('user_id',$id)
+            ->orderBy('updated_at', 'desc')
+            ->get();
+
+        if (!$order) {
+            return response()->json(['message' => 'Order not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        return response()->json($order, Response::HTTP_OK);
+    }
+
+    /**
      * @OA\Get(
      *     path="/api/orders",
      *     tags={"Orders"},
+     *     security={{"sanctum": {}}},
      *     summary="Get a list of orders",
-     *     description="Returns a list of all orders.",
+     *     description="Returns a list of all orders, with optional filtering by status_id.",
+     *     @OA\Parameter(
+     *         name="status_id",
+     *         in="query",
+     *         required=false,
+     *         description="Filter orders by one or multiple status_id (comma-separated values, e.g., 1,2,3)",
+     *         @OA\Schema(type="string", example="1,2,3")
+     *     ),
+
      *     @OA\Response(
-     *         response=200,
-     *         description="Successful operation"
+     *         response=400,
+     *         description="Invalid status_id provided"
      *     )
      * )
      */
-    public function index()
+    public function index(Request $request)
     {
-        $orders = Order::all();
+        // Начинаем с запроса всех заказов
+        $orders = Order::query();
+//1   10  14
+        // Если параметр status_id передан в запросе, фильтруем заказы по статусу
+        if ($request->filled('status_id')) {
+            $statusIds = explode(',', $request->query('status_id'));
+
+            // Проверяем, что все status_id являются числами и существуют в таблице order_statuses
+            foreach ($statusIds as $statusId) {
+                if (!is_numeric($statusId) || !OrderStatus::find($statusId)) {
+                    return response()->json(['message' => 'Invalid status_id provided'], 400);
+                }
+            }
+
+//            if ($statusIds[0] == 1 && auth('sanctum')->user()->role == 'master' ){
+//                // Применяем фильтрацию по массиву status_id
+//                $orders->whereIn('status_id', [1,2,8]);
+//            }
+//            else if ($statusIds[0] == 10 && auth('sanctum')->user()->role == 'master' ){
+//                // Применяем фильтрацию по массиву status_id
+//                $orders->whereIn('status_id', [3,5,9,10,12]);
+//            }
+//            else if ($statusIds[0] == 14 && auth('sanctum')->user()->role == 'master' ){
+//                // Применяем фильтрацию по массиву status_id
+//                $orders->whereIn('status_id', [4,6,7,11,13,14]);
+//            }
+
+//            masters
+//            В обработке
+            if ($statusIds[0] == 3){
+                // Применяем фильтрацию по массиву status_id
+                $orders = $orders->whereIn('status_id', [1,2,8]);
+            }
+//            Принятые
+            else if ($statusIds[0] == 4){
+                // Применяем фильтрацию по массиву status_id
+                $orders = $orders->whereIn('status_id', [9]);
+            }
+//            Выполненные
+            else if ($statusIds[0] == 5){
+                // Применяем фильтрацию по массиву status_id
+                $orders = $orders->whereIn('status_id', [4,6,7,11,13,14]);
+            }
+//            users
+//            Отправленные
+            else if ($statusIds[0] == 1){
+                // Применяем фильтрацию по массиву status_id
+                $orders = $orders->whereIn('status_id', [1,8,9]);
+            }
+//            отвеченные
+            else if ($statusIds[0] == 10){
+                // Применяем фильтрацию по массиву status_id
+                $orders = $orders->whereIn('status_id', [2]);
+            }
+//            Принятые
+            else if ($statusIds[0] == 14){
+                // Применяем фильтрацию по массиву status_id
+                $orders = $orders->whereIn('status_id', [4,6,7,13,14]);
+            }
+//            Архив
+            else if ($statusIds[0] == 15){
+                // Применяем фильтрацию по массиву status_id
+                $orders = $orders->whereIn('status_id', [3,5,10,12,15,11]);
+            }
+//            // Применяем фильтрацию по массиву status_id
+//            $orders->whereIn('status_id', $statusIds);
+        }
+//        dd(auth('sanctum')->user()->hasRole('master'));
+        if (auth('sanctum')->user()->hasRole('master')){
+
+            $orders = $orders
+                ->where('master_id',auth('sanctum')->id())
+                ->with([
+                    'user_surveys.user_answers.question',
+                ]) // Подгружаем связанные данные
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+        }else{
+            // Получаем заказы, возможно с фильтрацией
+            $orders = $orders
+                ->where('user_id',auth('sanctum')->id())
+                ->with([
+                    'user_surveys.user_answers.question',
+                ]) // Подгружаем связанные данные
+                ->orderBy('created_at', 'desc')
+                ->get();
+        }
+
+//        foreach($orders as $order){
+//            if (!is_null($order->user_survey_id)){
+//                foreach($order->user_surveys->user_answers as $user_answer){
+//                    $user_answer->options = Option::whereIn('id',json_decode($user_answer->option_ids))->get();
+//                }
+//            }
+//        }
+
+
+
+//        if(auth('sanctum')->id() == 2){
+//            $orders = $orders
+//                ->where('master_id',null)
+//                ->with([
+//                    'user_surveys.user_answers.question',
+//                ]) // Подгружаем связанные данные
+//                ->orderBy('created_at', 'desc')
+//                ->get();
+            $quick_orders = QuickOrder::where('is_active',1)
+                ->with([
+                    'user_surveys.user_answers.question',
+                ]) // Подгружаем связанные данные
+                ->get();
+
+//            return response()->json($quick_orders, Response::HTTP_OK);
+            foreach($orders as $order) {
+                if (
+                    !is_null($order->user_survey_id) &&
+                    $order->relationLoaded('user_surveys') &&
+                    $order->user_surveys // существует
+                ) {
+                    foreach($order->user_surveys->user_answers ?? [] as $user_answer) {
+                        $user_answer->options = Option::whereIn(
+                            'id',
+                            json_decode($user_answer->option_ids ?? '[]')
+                        )->get();
+                    }
+                }
+
+                $order->is_quick_order = false;
+            }
+//            $orders->quick_orders = $quick_orders;
+//            return response()->json($orders, Response::HTTP_OK);
+
+            foreach($quick_orders as $quick_order) {
+                $quick_order->video_id = null;
+                $quick_order->status_id = 9;
+                $quick_order->quick_order_id = $quick_order->id;
+                $quick_order->master_id = 2;
+                $quick_order->master_price = null;
+                $quick_order->master_time = null;
+                $quick_order->master_comment = null;
+                $quick_order->is_read = 0;
+                $quick_order->user_survey_id = $quick_order->user_surveys[0]->id;
+                $quick_order->is_quick_order = true;
+
+
+            }
+
+            $combined = $orders->merge($quick_orders);
+
+            return response()->json($combined, Response::HTTP_OK);
+//            return response()->json($orders, Response::HTTP_OK);
+//            return response()->json(['orders'=>$orders,'quick_orders'=>$quick_orders], Response::HTTP_OK);
+//        }
+
+
+
+
+        foreach($orders as $order) {
+            if (
+                !is_null($order->user_survey_id) &&
+                $order->relationLoaded('user_surveys') &&
+                $order->user_surveys // существует
+            ) {
+                foreach($order->user_surveys->user_answers ?? [] as $user_answer) {
+                    $user_answer->options = Option::whereIn(
+                        'id',
+                        json_decode($user_answer->option_ids ?? '[]')
+                    )->get();
+                }
+            }
+        }
+
         return response()->json($orders, Response::HTTP_OK);
     }
 
@@ -32,6 +402,7 @@ class OrderController extends Controller
      * @OA\Get(
      *     path="/api/orders/{id}",
      *     tags={"Orders"},
+     *     security={{"sanctum": {}}},
      *     summary="Get an order by ID",
      *     description="Returns a single order",
      *     @OA\Parameter(
@@ -50,28 +421,152 @@ class OrderController extends Controller
      */
     public function show($id)
     {
-        $order = Order::find($id);
+        $order = Order::with([
+            'user_surveys.user_answers.question',
+        ])->find($id);
 
         if (!$order) {
             return response()->json(['message' => 'Order not found'], Response::HTTP_NOT_FOUND);
         }
 
-        return response()->json($order, Response::HTTP_OK);
+        $data = [];
+
+        foreach ($order->user_surveys->user_answers as $answer) {
+            $options = collect($answer->options_data)->pluck('option_text')->toArray(); // Собираем все option_text в массив
+
+            $data[] = [
+                'answer' => [
+                    'question' => $answer->question->text,
+                    'options' => implode(',', $options), // Объединяем через запятую
+                    'custom_value' => $answer->custom_value,
+                    'image_urls' => $answer->image_urls,
+                ]
+            ];
+        }
+        //        foreach ($order->user_surveys->user_answers as $answer) {
+        //            echo $answer->question->title; // например, текст вопроса
+        //
+        //            foreach ($answer->options_data as $option) {
+        //                echo $option->title; // например, текст варианта ответа
+        //            }
+        //        }
+
+//        dd($order);
+        // Теперь вернем отформатированный ответ
+        return response()->json([
+            'id' => $order->id,
+            'user_survey_id' => $order->user_survey_id,
+            'user_id' => $order->user_id,
+            'master_id' => $order->master_id,
+            'video_id' => $order->video_id,
+            'master_price' => $order->master_price,
+            'master_time' => $order->master_time,
+            'master_comment' => $order->master_comment,
+            'status_id' => $order->status_id,
+            'quick_order_id' => $order->quick_order_id,
+            'is_read' => $order->is_read,
+            'created_at' => $order->created_at,
+            'updated_at' => $order->updated_at,
+            'data' => $data,
+        ], Response::HTTP_OK);
+
+//        return response()->json($order, Response::HTTP_OK);
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/api/quick_orders/{quick_order_id}",
+     *     tags={"Orders"},
+     *     security={{"sanctum": {}}},
+     *     summary="Get an quick_order by ID",
+     *     description="Returns a single quick_order",
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         description="ID of the quick_order to retrieve",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="quick_order found"
+     *     ),
+     *     @OA\Response(response=404, description="quick_order not found")
+     * )
+     */
+    public function show_quick_order($id)
+    {
+        $order = QuickOrder::with([
+            'user_surveys.user_answers.question',
+        ])->find($id);
+
+        if (!$order) {
+            return response()->json(['message' => 'QuickOrder not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        $data = [];
+
+//        return $order->user_surveys[0]->user_answers;
+        foreach ($order->user_surveys[0]->user_answers as $answer) {
+            $options = collect($answer->options_data)->pluck('option_text')->toArray(); // Собираем все option_text в массив
+
+            $data[] = [
+                'answer' => [
+                    'question' => $answer->question->text,
+                    'options' => implode(',', $options), // Объединяем через запятую
+                    'custom_value' => $answer->custom_value,
+                    'image_urls' => $answer->image_urls,
+                ]
+            ];
+        }
+        //        foreach ($order->user_surveys->user_answers as $answer) {
+        //            echo $answer->question->title; // например, текст вопроса
+        //
+        //            foreach ($answer->options_data as $option) {
+        //                echo $option->title; // например, текст варианта ответа
+        //            }
+        //        }
+
+//        dd($order);
+        // Теперь вернем отформатированный ответ
+        return response()->json([
+            'id' => $order->id,
+            'user_survey_id' => $order->user_survey_id,
+            'user_id' => $order->user_id,
+            'master_id' => $order->master_id,
+            'video_id' => $order->video_id,
+            'master_price' => $order->master_price,
+            'master_time' => $order->master_time,
+            'master_comment' => $order->master_comment,
+            'status_id' => $order->status_id,
+            'quick_order_id' => $order->quick_order_id,
+            'is_read' => $order->is_read,
+            'created_at' => $order->created_at,
+            'updated_at' => $order->updated_at,
+            'data' => $data,
+        ], Response::HTTP_OK);
+
+//        return response()->json($order, Response::HTTP_OK);
     }
 
     /**
      * @OA\Post(
      *     path="/api/orders",
      *     tags={"Orders"},
+     *     security={{"sanctum": {}}},
      *     summary="Create a new order",
      *     description="Adds a new order to the database",
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
-     *             required={"customer_id", "status_id", "total"},
-     *             @OA\Property(property="customer_id", type="integer", description="ID of the customer"),
-     *             @OA\Property(property="status_id", type="integer", description="ID of the order status"),
-     *             @OA\Property(property="total", type="number", format="float", description="Total amount of the order")
+     *             required={"user_id","user_survey_id", "master_id", "video_id", "master_price", "master_time", "status_id"},
+     *             @OA\Property(property="user_survey_id", type="integer", description="ID of the user survey"),
+     *             @OA\Property(property="user_id", type="integer", description="ID of the user (customer)"),
+     *             @OA\Property(property="master_id", type="integer", description="ID of the master (user)"),
+     *             @OA\Property(property="video_id", type="integer", description="ID of the video"),
+     *             @OA\Property(property="master_price", type="string", description="Price charged by the master"),
+     *             @OA\Property(property="master_time", type="string", description="Time related to the order (in minutes)"),
+     *             @OA\Property(property="status_id", type="integer", description="ID of the order status")
      *         )
      *     ),
      *     @OA\Response(
@@ -83,13 +578,15 @@ class OrderController extends Controller
      */
     public function store(Request $request)
     {
+        // return $request->all();
         $validatedData = Validator::make($request->all(), [
-            'customer_id' => 'required|integer|exists:users,id',
+            'user_id' => 'required|integer|exists:users,id',
+            'user_survey_id' => 'required|integer|exists:user_surveys,id',
+            'master_id' => 'required|integer|exists:users,id',
+            'video_id' => 'required|integer|exists:videos,id',
+            'master_price' => 'required|string|min:0',
+            'master_time' => 'required|string|min:1',
             'status_id' => 'required|integer|exists:order_statuses,id',
-            'total' => 'required|numeric|min:0',
-            'items' => 'required|array',
-            'items.*.product_id' => 'required|integer|exists:products,id',
-            'items.*.quantity' => 'required|integer|min:1',
         ]);
 
         if ($validatedData->fails()) {
@@ -102,9 +599,70 @@ class OrderController extends Controller
     }
 
     /**
+     * @OA\Post(
+     *     path="/api/quick_orders",
+     *     tags={"Orders"},
+     *     security={{"sanctum": {}}},
+     *     summary="Create a new quick_order",
+     *     description="Adds a new quick_order to the database",
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"user_id","user_survey_id", "master_id", "video_id", "master_price", "master_time", "status_id"},
+     *             @OA\Property(property="user_survey_id", type="integer", description="ID of the user survey"),
+     *             @OA\Property(property="user_id", type="integer", description="ID of the user (customer)"),
+     *             @OA\Property(property="master_id", type="integer", description="ID of the master (user)"),
+     *             @OA\Property(property="video_id", type="integer", description="ID of the video"),
+     *             @OA\Property(property="master_price", type="string", description="Price charged by the master"),
+     *             @OA\Property(property="master_time", type="string", description="Time related to the order (in minutes)"),
+     *             @OA\Property(property="status_id", type="integer", description="ID of the order status")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=201,
+     *         description="Order created"
+     *     ),
+     *     @OA\Response(response=400, description="Bad request")
+     * )
+     */
+    public function store_quick_order(Request $request)
+    {
+//         return $request->all();
+        $validatedData = Validator::make($request->all(), [
+            'quick_order_id' => 'required|integer|exists:quick_orders,id',
+        ]);
+        if ($validatedData->fails()) {
+            return response()->json($validatedData->errors(), Response::HTTP_BAD_REQUEST);
+        }
+//        return QuickOrder::find($request->quick_order_id);
+        $quick_order = QuickOrder::find($request->quick_order_id);
+
+        $order = Order::create(
+            [
+                'user_survey_id' => $quick_order->user_survey_id,
+                'user_id' => auth('sanctum')->id(),
+                'status_id' => 9,
+                'quick_order_id' => $request->quick_order_id,
+            ]
+        );
+        $quick_order->masters_left -= 1;
+        $quick_order->save();
+        return response()->json($order, Response::HTTP_CREATED);
+//        return $quick_order;
+//        $quick_order->
+//        return null;
+
+
+//        $order = Order::create($validatedData->validated());
+//
+//        return response()->json($order, Response::HTTP_CREATED);
+    }
+
+    /**
      * @OA\Put(
      *     path="/api/orders/{id}",
      *     tags={"Orders"},
+     *     security={{"sanctum": {}}},
      *     summary="Update an existing order",
      *     description="Updates order details by ID",
      *     @OA\Parameter(
@@ -118,7 +676,9 @@ class OrderController extends Controller
      *         required=true,
      *         @OA\JsonContent(
      *             @OA\Property(property="status_id", type="integer", description="Updated status ID"),
-     *             @OA\Property(property="total", type="number", format="float", description="Updated total amount")
+     *             @OA\Property(property="master_price", type="number", format="float", description="Updated master price"),
+     *             @OA\Property(property="master_time", type="integer", description="Updated master time"),
+     *             @OA\Property(property="video_id", type="integer", description="Updated video ID")
      *         )
      *     ),
      *     @OA\Response(
@@ -138,17 +698,33 @@ class OrderController extends Controller
 
         $validatedData = Validator::make($request->all(), [
             'status_id' => 'sometimes|integer|exists:order_statuses,id',
-            'total' => 'sometimes|numeric|min:0',
-            'items' => 'sometimes|array',
-            'items.*.product_id' => 'sometimes|integer|exists:products,id',
-            'items.*.quantity' => 'sometimes|integer|min:1',
+            'master_price' => 'sometimes|numeric|min:0',
+            'master_time' => 'sometimes|integer|min:1',
+            'video_id' => 'sometimes|integer|exists:videos,id',
         ]);
 
         if ($validatedData->fails()) {
             return response()->json($validatedData->errors(), Response::HTTP_BAD_REQUEST);
         }
 
-        $order->update(array_filter($validatedData->validated())); // Update only provided fields
+        $data = $validatedData->validated();
+        // Если статус сменился на 4 — проверка баланса
+        if (isset($data['status_id']) && $data['status_id'] == 6) {
+            $master = $order->master; // убедись что есть связь master()
+
+            $requiredAmount = 1000; // например, сколько нужно списать
+
+            if ($master->balance < $requiredAmount) {
+                return response()->json(['message' => 'Недостаточно средств для принятия заказа'], 402);
+            }
+
+            // Списываем деньги
+            $master->balance -= $requiredAmount;
+            $master->save();
+        }
+        // Обновляем только те поля, которые были переданы в запросе
+        $order->update(array_filter($validatedData->validated())); // Фильтруем пустые значения
+
         return response()->json($order, Response::HTTP_OK);
     }
 
@@ -156,6 +732,7 @@ class OrderController extends Controller
      * @OA\Delete(
      *     path="/api/orders/{id}",
      *     tags={"Orders"},
+     *     security={{"sanctum": {}}},
      *     summary="Delete an order",
      *     description="Deletes an order by ID",
      *     @OA\Parameter(

@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Rating;
+use App\Models\Role;
 use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Validator;
@@ -11,6 +13,14 @@ use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Http;
 use Mobizon\MobizonApi;
+use Illuminate\Support\Facades\DB;
+use Intervention\Image\Facades\Image;
+use Intervention\Image\ImageManager;
+use Intervention\Image\Drivers\Imagick\Driver;
+use Intervention\Image\EncodedImage;
+use Illuminate\Support\Facades\File;
+use Illuminate\Validation\Rule;
+use Illuminate\Support\Arr;
 
 class AuthController extends Controller
 {
@@ -26,17 +36,13 @@ class AuthController extends Controller
      *         @OA\MediaType(
      *             mediaType="multipart/form-data",
      *             @OA\Schema(
-     *                 required={"name", "email", "password", "password_confirmation", "phone", "username", "city_id", "firstname", "lastname", "iin", "role"},
-     *                 @OA\Property(property="name", type="string", example="John Doe"),
-     *                 @OA\Property(property="email", type="string", format="email", example="johndoe@example.com"),
-     *                 @OA\Property(property="password", type="string", example="password123"),
-     *                 @OA\Property(property="password_confirmation", type="string", example="password123"),
-     *                 @OA\Property(property="phone", type="string", example="+1234567890"),
+     *                 required={"phone", "city_id", "role"},
+     *                 @OA\Property(property="phone", type="string", example="+77473186847"),
      *                 @OA\Property(property="username", type="string", example="johndoe"),
      *                 @OA\Property(property="city_id", type="integer", example=1),
      *                 @OA\Property(property="firstname", type="string", example="John"),
      *                 @OA\Property(property="lastname", type="string", example="Doe"),
-     *                 @OA\Property(property="iin", type="string", example="123456789012", maxLength=12),
+     *                 @OA\Property(property="iin", type="string", example="123456789014", maxLength=12),
      *                 @OA\Property(property="is_visible", type="integer", enum={1, 0}, example=1),
      *                 @OA\Property(
      *                     property="photo",
@@ -44,7 +50,10 @@ class AuthController extends Controller
      *                     format="binary",
      *                     description="Upload photo file"
      *                 ),
-     *                 @OA\Property(property="role", type="string", example="user", enum={"master", "user"})
+     *                 @OA\Property(property="role", type="string", example="user", enum={"master", "user"}),
+     *                 @OA\Property(property="company_type", type="string", enum={"ИП", "ТОО"}, example="ИП"),
+     *                 @OA\Property(property="company_name", type="string", example="My Company"),
+     *                 @OA\Property(property="description", type="string", example="Professional service provider")
      *             )
      *         )
      *     ),
@@ -57,8 +66,6 @@ class AuthController extends Controller
      *                 property="user",
      *                 type="object",
      *                 @OA\Property(property="id", type="integer", example=1),
-     *                 @OA\Property(property="name", type="string", example="John Doe"),
-     *                 @OA\Property(property="email", type="string", example="johndoe@example.com"),
      *                 @OA\Property(property="phone", type="string", example="+1234567890"),
      *                 @OA\Property(property="username", type="string", example="johndoe"),
      *                 @OA\Property(property="city_id", type="integer", example=1),
@@ -81,100 +88,173 @@ class AuthController extends Controller
 
     public function register(Request $request)
     {
-        $validatedData = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8|confirmed', // Обратите внимание на подтверждение пароля
+        $data = [
+            'phone' => $this->formatPhoneNumber($request->phone),
+            'city_id' => $request->city_id,
+            'is_visible' => $request->is_visible,
+            'photo' => $request->photo,
+            'role' => $request->role,
+            'username' => $request->username,
+        ];
+        if ($request->role == 'master'){
+            $data = [
+                'phone' => $this->formatPhoneNumber($request->phone),
+                'city_id' => $request->city_id,
+                'is_visible' => $request->is_visible,
+                'photo' => $request->photo,
+                'role' => $request->role,
+                'iin' => $request->iin,
+                'firstname' => $request->firstname,
+                'lastname' => $request->lastname,
+                'company_type' => $request->company_type,
+                'company_name' => $request->company_name,
+            ];
+        }
+        $validatedData = Validator::make($data, [
             'phone' => 'required|string|max:15|unique:users',
-            'username' => 'required|string|max:255|unique:users',
             'city_id' => 'required|integer|exists:cities,id',
-            'firstname' => 'required|string|max:255',
-            'lastname' => 'required|string|max:255',
-            'iin' => 'required|string|size:12|unique:users',
             'is_visible' => 'boolean',
-            'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048', // Валидация для файла фото
-            'role' => 'required|string' // Убедитесь, что роли соответствуют вашим значениям
+            'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'role' => 'required|string|in:user,master',
+            // Только если role = user
+            'username' => [Rule::requiredIf($request->role === 'user'), 'nullable', 'string', 'max:255'],
+            // Эти поля обязательны только если role = master
+            'iin' => [Rule::requiredIf($request->role == 'master'), 'string', 'size:12', 'unique:users'],
+            'firstname' => [Rule::requiredIf($request->role == 'master'), 'string', 'max:255'],
+            'lastname' => [Rule::requiredIf($request->role == 'master'), 'string', 'max:255'],
+            'company_type' => [Rule::requiredIf($request->role == 'master'), 'string', 'in:ИП,ТОО'],
+            'company_name' => [Rule::requiredIf($request->role == 'master'), 'string'],
+//            'description' => [Rule::requiredIf($request->role == 'master'), 'string', 'max:500'],
         ]);
 
         if ($validatedData->fails()) {
-            return response()->json($validatedData->errors(),400);
-
+            return response()->json($validatedData->errors(), 400);
         }
-        $validatedData = $validatedData->validate();
 
-        // dd($validatedData);
-        // Загрузка фото, если предоставлено
+        $data = $validatedData->validated();
+//        // Проверка роли "master" вручную
+//        if ($data['role'] === 'master') {
+//            $validator = Validator::make($request->all(), [
+//                'iin' => 'required|string|size:12|unique:users',
+//                'firstname' => 'required|string|max:255',
+//                'lastname' => 'required|string|max:255',
+//                'company_type' => 'required|string|in:ИП,ТОО',
+//                'company_name' => 'required|string',
+//                'description' => 'required|string|max:500',
+//            ]);
+//
+//            if ($validator->fails()) {
+//                return response()->json($validator->errors(), 422);
+//            }
+//
+//            $data = array_merge($data, $validator->validated());
+//        }
+
+        // return ($data);
+
+
+
+        // Сохранение фото, если загружено
         if ($request->hasFile('photo')) {
-            $path = $request->file('photo')->store('photos', 'public'); // сохранение в storage/app/public/photos
-            $validatedData['photo_url'] = $path; // Сохранение пути в базе данных
+            $path = $request->file('photo')->store('photos/users', 'public');
+//            $image = Image::make(storage_path("app/public/{$path}"))->resize(600, null, function ($constraint) {
+//                $constraint->aspectRatio();
+//            })->save();
+            $data['photo_url'] = $path;
         }
 
-        // Хэшируем пароль перед сохранением
-        $validatedData['password'] = Hash::make($validatedData['password']);
+//        $verificationCode = random_int(100000, 999999);
+        $verificationCode = 000000;
+//        $this->funcSendVerificationCode($data['phone'], $verificationCode);
+//        formatPhoneNumber
+//        $data['phone'] = $this->formatPhoneNumber($data['phone']);
+//        $data['company_type'] = $data['company_type'] ?? null;
+//        $data['company_name'] = $data['company_name'] ?? null;
+//        $data['description'] = $data['description'] ?? null;
+//        $data['username'] = $data['username'] ?? null;
+        $data['verification_code'] = $verificationCode;
 
-        // Создаем пользователя
-        $user = User::create($validatedData);
+        if ($data['role'] === 'user') {
+            $filteredData = Arr::only($data, ['phone', 'username', 'city_id', 'is_visible', 'verification_code']);
+        } else { // Если role = master
+            $filteredData = Arr::only($data, [
+                'phone', 'iin', 'firstname', 'lastname',
+                'company_type', 'company_name', 'description',
+                'city_id', 'is_visible', 'verification_code'
+            ]);
+        }
 
-        $verificationCode = random_int(100000, 999999);
-
+        // Создаем пользователя с отфильтрованными данными
+        try {
+            $user = User::create($filteredData);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Ошибка при создании пользователя', 'error' => $e->getMessage()], 500);
+        }
         // Сохранение кода в поле `verification_code`
-        // $user->update(['verification_code' => $verificationCode]);
-        $user->verification_code = $verificationCode;
-        $user->save();
+        $role = Role::where('slug',$data['role'])->first();
+        if ($role){
+            $user->roles()->attach($role->id);
+            $user->load('roles');
+        }
+        if ($data['role'] == 'master'){
+            Rating::create(
+                [
+                    'master_id'=>$user->id,
+                    'score'=>0,
+                ]
+            );
+        }
 
-        // dd($user);
-
-        // Отправка кода через Mobizon API
-        $this->sendVerificationCode($user->phone, $verificationCode);
-
+        // $users = User::with('roles')->get();
         return response()->json(['message' => 'User registered successfully', 'user' => $user]);
     }
 
-    /**
-     * Helper function to send verification code via Mobizon.
-     */
-    /**
- * @OA\Post(
- *     path="/api/auth/send-verification-code",
- *     summary="Отправить код верификации на телефон",
- *     description="Отправляет SMS с кодом верификации на указанный номер телефона пользователя",
- *     operationId="sendVerificationCode",
- *     tags={"Auth"},
- *     @OA\RequestBody(
- *         required=true,
- *         @OA\JsonContent(
- *             required={"phone"},
- *             @OA\Property(property="phone", type="string", example="+1234567890", description="Номер телефона для отправки кода верификации")
- *         )
- *     ),
- *     @OA\Response(
- *         response=200,
- *         description="Код верификации успешно отправлен",
- *         @OA\JsonContent(
- *             @OA\Property(property="message", type="string", example="Verification code sent successfully")
- *         )
- *     ),
- *     @OA\Response(
- *         response=400,
- *         description="Ошибка валидации",
- *         @OA\JsonContent(
- *             @OA\Property(property="error", type="string", example="Invalid phone number format")
- *         )
- *     ),
- *     @OA\Response(
- *         response=500,
- *         description="Не удалось отправить код верификации",
- *         @OA\JsonContent(
- *             @OA\Property(property="error", type="string", example="Failed to send verification code")
- *         )
- *     )
- * )
- */
-    private function sendVerificationCode($phone, $code)
+    public function sendVerificationCode(Request $request)
     {
+        $request->validate([
+            'phone' => 'required|string',
+        ]);
+
+        $phone = $this->formatPhoneNumber($request->phone);
+
+        // Проверка, зарегистрирован ли номер телефона
+        $user = User::where('phone', $phone)->first();
+        if (!$user) {
+            return response()->json(['error' => 'This phone number is not registered'], 404);
+        }
+
+        $code = rand(100000, 999999); // Генерация случайного кода
+
+        $response = Http::get("https://api.mobizon.kz/service/message/sendsmsmessage", [
+            'recipient' => $phone,
+            'text' => "Your verification code is: $code",
+            'apiKey' => env('MOBIZON_API_KEY'),
+        ]);
+
+        if ($response->failed()) {
+            return response()->json(['error' => 'Failed to send verification code'], 500);
+        }
+
+        // Сохранение кода верификации для последующей проверки
+        $user->verification_code = $code;
+        $user->save();
+
+        return response()->json(['message' => 'Verification code sent successfully']);
+    }
+
+    public function funcSendVerificationCode($phone, $code)
+    {
+        // if ($code == 0){
+        //     $user = User::where('phone', $request->phone)->first();
+        //     $phone = $user->phone;
+        //     $code = $user->verification_code;
+        // }
+
         $formattedPhone = $this->formatPhoneNumber($phone);
 
-        $api = new MobizonApi(env('MOBIZON_API_KEY'), 'api.mobizon.kz');
+        // $api = new MobizonApi(env('MOBIZON_API_KEY'), 'api.mobizon.kz');
+        $api = new MobizonApi('kzcbdfc80add4fdb9ee55e5527b427cbd82ef0f3d7ad22099b201d57acb594e0d9b2c7', 'api.mobizon.kz');
+
         // API call to send a message
         if ($api->call('message',
         'sendSMSMessage',
@@ -182,7 +262,8 @@ class AuthController extends Controller
             // Recipient international phone number
             'recipient' => $formattedPhone,
             // Message text
-            'text' => "Ваш код верификации: $code",
+            'text' => "Код: $code. Никому не сообщайте. mebelplace.kz",
+//            'text' => "Ваш код верификации: $code. mebelplace.kz — введите код для продолжения. Не передавайте его другим.",
             // Alphaname is optional, if you don't have registered alphaname, just skip this parameter and your message will be sent with our free common alphaname, if it's available for this direction.
 
             // 'from' => 'SuperMakers',
@@ -214,6 +295,7 @@ class AuthController extends Controller
         // if ($response->failed()) {
         //     throw new \Exception('Failed to send verification code');
         // }
+
     }
 
     public function formatPhoneNumber($phone)
@@ -230,7 +312,7 @@ class AuthController extends Controller
      */
     /**
  * @OA\Post(
- *     path="/api/auth/verify-account",
+ *     path="/api/verify-account",
  *     summary="Верификация аккаунта по телефону и коду",
  *     description="Проверяет код верификации и отмечает аккаунт как верифицированный, если код корректен.",
  *     operationId="verifyAccount",
@@ -274,20 +356,106 @@ class AuthController extends Controller
             'verification_code' => 'required|integer',
         ]);
 
+        $phone = $this->formatPhoneNumber($request->phone);
+
         if ($validatedData->fails()) {
             return response()->json($validatedData->errors(), 400);
         }
 
-        $user = User::where('phone', $request->phone)->where('verification_code', $request->verification_code)->first();
+        $user = User::where('phone', $phone)->where('verification_code', $request->verification_code)->first();
 
         if (!$user) {
             return response()->json(['message' => 'Invalid verification code or phone number'], 400);
         }
 
         // Обновляем статус на "верифицирован" и удаляем код
-        $user->update(['is_verified' => 1, 'verification_code' => null]);
+        // $user->update(['is_verified' => 1, 'verification_code' => null]);
+        $user->is_verified = 1;
+        $user->verification_code = null;
+        $user->save();
 
-        return response()->json(['message' => 'Account verified successfully']);
+        $token = $user->createToken('api-token')->plainTextToken;
+
+        return response()->json(['message' => 'Account verified successfully', 'Authorization' => 'Bearer ' . $token]);
+
+        // return response()->json(['message' => 'Account verified successfully']);
+    }
+
+    /**
+     * @OA\Post(
+     *     path="/api/verify-code",
+     *     tags={"Auth"},
+     *     summary="Отправка кода для сброса пароля",
+     *     description="Отправляет код на указанный номер телефона, если номер зарегистрирован в системе.",
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"phone"},
+     *             @OA\Property(property="phone", type="string", example="77473186847", description="Номер телефона пользователя в формате 7XXXXXXXXXX")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Код для сброса пароля успешно отправлен",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="message", type="string", example="Код для сброса пароля отправлен на ваш номер телефона.")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=400,
+     *         description="Ошибка валидации или отсутствует зарегистрированный номер",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="error", type="string", example="Invalid phone number or user not found.")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Ошибка сервера",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="message", type="string", example="Не удалось отправить код для сброса пароля.")
+     *         )
+     *     )
+     * )
+     */
+    public function verifyCode(Request $request)
+    {
+        $validatedData = Validator::make($request->all(), [
+            'phone' => 'required|string',
+        ]);
+
+        if ($validatedData->fails()) {
+            return response()->json($validatedData->errors(), 400);
+        }
+        // Извлечение данных
+        $validatedData = $validatedData->validate();
+        $phone = $this->formatPhoneNumber($validatedData['phone']);
+
+        // Генерация кода для сброса пароля
+        $resetCode = rand(100000, 999999);
+        $resetCode = 000000;
+
+        // Находим пользователя по номеру телефона
+        $user = User::where('phone', $phone)->first();
+
+        // Сохранение кода сброса пароля в базе данных для пользователя
+        $user->is_verified = 0;
+        $user->verification_code = $resetCode;
+        $user->save();
+
+        // Отправка кода через SMS (используем вашу функцию отправки SMS)
+//        $this->funcSendVerificationCode($phone, $resetCode);
+
+        return response()->json(['message' => 'Код для сброса пароля отправлен на ваш номер телефона.']);
+
+        // $status = Password::sendResetLink(
+        //     $request->only('phone')
+        // );
+
+        // if ($status === Password::RESET_LINK_SENT) {
+        //     return response()->json(['message' => 'Ссылка на сброс пароля отправлена на ваш email.']);
+        // }
+
+        // return response()->json(['message' => 'Не удалось отправить ссылку на сброс пароля.'], 500);
     }
 
     /**
@@ -302,9 +470,8 @@ class AuthController extends Controller
      *         @OA\MediaType(
      *             mediaType="application/json",
      *             @OA\Schema(
-     *                 required={"phone", "password"},
+     *                 required={"phone"},
      *                 @OA\Property(property="phone", type="string", format="", example="+1234567890"),
-     *                 @OA\Property(property="password", type="string", example="password123")
      *             )
      *         )
      *     ),
@@ -323,8 +490,6 @@ class AuthController extends Controller
      *                 property="errors",
      *                 type="object",
      *                 example={
-     *                     "email": {"The email field is required."},
-     *                     "password": {"The password field is required."}
      *                 }
      *             )
      *         )
@@ -336,19 +501,17 @@ class AuthController extends Controller
         $validatedData = Validator::make($request->all(), [
 
             'phone' => 'required|string',
-            'password' => 'required|string',
         ]);
 
         if ($validatedData->fails()) {
             return response()->json($validatedData->errors(),400);
         }
         $validatedData = $validatedData->validate();
-        $user = User::where('phone', $request->phone)->first();
 
-        if (! $user || ! Hash::check($request->password, $user->password)) {
-            throw ValidationException::withMessages([
-                'phone' => ['The provided credentials are incorrect.'],
-            ]);
+        $phone = $this->formatPhoneNumber($request->phone);
+        $user = User::where('phone', $phone)->first();
+        if (!$user) {
+            return response()->json(['message' => 'User not found'], 404);
         }
 
         $token = $user->createToken('api-token')->plainTextToken;
@@ -387,183 +550,159 @@ class AuthController extends Controller
         return response()->json(['message' => 'Logged out successfully']);
     }
 
-    /**
-     * @OA\Post(
-     *     path="/api/password/reset-link",
-     *     summary="Send password reset link",
-     *     description="Sends a password reset link to the user's phone",
-     *     operationId="sendResetLink",
-     *     tags={"Auth"},
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\JsonContent(
-     *             required={"phone"},
-     *             @OA\Property(property="phone", type="string", format="phone", example="+123456789")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Password reset link sent successfully",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="message", type="string", example="Ссылка на сброс пароля отправлена на ваш phone.")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=400,
-     *         description="Validation error",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="phone", type="array",
-     *                 @OA\Items(type="string", example="The phone field is required.")
-     *             )
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=500,
-     *         description="Failed to send password reset link",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="message", type="string", example="Не удалось отправить ссылку на сброс пароля.")
-     *         )
-     *     )
-     * )
-     */
-    public function sendResetLink(Request $request)
-    {
-        $validatedData = Validator::make($request->all(), [
-            'email' => 'required|string|email',
-        ]);
+//    /**
+//     * @OA\Post(
+//     *     path="/api/password/reset-link",
+//     *     tags={"Auth"},
+//     *     summary="Отправка кода для сброса пароля",
+//     *     description="Отправляет код для сброса пароля на указанный номер телефона, если номер зарегистрирован в системе.",
+//     *     @OA\RequestBody(
+//     *         required=true,
+//     *         @OA\JsonContent(
+//     *             required={"phone"},
+//     *             @OA\Property(property="phone", type="string", example="77473186847", description="Номер телефона пользователя в формате 7XXXXXXXXXX")
+//     *         )
+//     *     ),
+//     *     @OA\Response(
+//     *         response=200,
+//     *         description="Код для сброса пароля успешно отправлен",
+//     *         @OA\JsonContent(
+//     *             @OA\Property(property="message", type="string", example="Код для сброса пароля отправлен на ваш номер телефона.")
+//     *         )
+//     *     ),
+//     *     @OA\Response(
+//     *         response=400,
+//     *         description="Ошибка валидации или отсутствует зарегистрированный номер",
+//     *         @OA\JsonContent(
+//     *             @OA\Property(property="error", type="string", example="Invalid phone number or user not found.")
+//     *         )
+//     *     ),
+//     *     @OA\Response(
+//     *         response=500,
+//     *         description="Ошибка сервера",
+//     *         @OA\JsonContent(
+//     *             @OA\Property(property="message", type="string", example="Не удалось отправить код для сброса пароля.")
+//     *         )
+//     *     )
+//     * )
+//     */
+//    public function sendResetLink(Request $request)
+//    {
+//        $validatedData = Validator::make($request->all(), [
+//            'phone' => 'required|string',
+//        ]);
+//
+//        if ($validatedData->fails()) {
+//            return response()->json($validatedData->errors(), 400);
+//        }
+//        // Извлечение данных
+//        $validatedData = $validatedData->validate();
+//        $phone = $this->formatPhoneNumber($validatedData['phone']);
+//
+//        // Генерация кода для сброса пароля
+//        $resetCode = rand(100000, 999999);
+//
+//        // Находим пользователя по номеру телефона
+//        $user = User::where('phone', $phone)->first();
+//
+//        // Сохранение кода сброса пароля в базе данных для пользователя
+//        $user->is_verified = 0;
+//        $user->verification_code = $resetCode;
+//        $user->save();
+//
+//        // Отправка кода через SMS (используем вашу функцию отправки SMS)
+//        $this->funcSendVerificationCode($phone, $resetCode);
+//
+//        return response()->json(['message' => 'Код для сброса пароля отправлен на ваш номер телефона.']);
+//
+//        // $status = Password::sendResetLink(
+//        //     $request->only('phone')
+//        // );
+//
+//        // if ($status === Password::RESET_LINK_SENT) {
+//        //     return response()->json(['message' => 'Ссылка на сброс пароля отправлена на ваш email.']);
+//        // }
+//
+//        // return response()->json(['message' => 'Не удалось отправить ссылку на сброс пароля.'], 500);
+//    }
+//
+//    /**
+//     * @OA\Post(
+//     *     path="/api/password/reset",
+//     *     tags={"Auth"},
+//     *     summary="Сброс пароля",
+//     *     description="Сбрасывает пароль пользователя, если номер телефона и код верификации совпадают.",
+//     *     @OA\RequestBody(
+//     *         required=true,
+//     *         @OA\JsonContent(
+//     *             required={"phone", "verification_code"},
+//     *             @OA\Property(property="phone", type="string", example="77473186847", description="Номер телефона пользователя в формате 7XXXXXXXXXX"),
+//     *             @OA\Property(property="verification_code", type="integer", example=123456, description="Код для верификации пользователя"),
+//     *         )
+//     *     ),
+//     *     @OA\Response(
+//     *         response=200,
+//     *         description="Пароль успешно изменен",
+//     *         @OA\JsonContent(
+//     *             @OA\Property(property="message", type="string", example="Пароль успешно изменен.")
+//     *         )
+//     *     ),
+//     *     @OA\Response(
+//     *         response=400,
+//     *         description="Ошибка валидации или неверный код",
+//     *         @OA\JsonContent(
+//     *             @OA\Property(property="message", type="string", example="Неверный код верификации или номер телефона.")
+//     *         )
+//     *     ),
+//     *     @OA\Response(
+//     *         response=500,
+//     *         description="Ошибка сервера",
+//     *         @OA\JsonContent(
+//     *             @OA\Property(property="message", type="string", example="Не удалось сбросить пароль.")
+//     *         )
+//     *     )
+//     * )
+//     */
+//    public function reset(Request $request)
+//    {
+//        $validatedData = Validator::make($request->all(), [
+//            'phone' => 'required|string',
+//            'verification_code' => 'required|integer',
+//
+//        ]);
+//
+//        if ($validatedData->fails()) {
+//            return response()->json($validatedData->errors(),400);
+//        }
+//        $validatedData = $validatedData->validate();
+//        $phone = $this->formatPhoneNumber($validatedData['phone']);
+//
+//        // Находим пользователя по номеру телефона и проверяем код верификации
+//        $user = User::where('phone', $phone)->where('verification_code', $validatedData['verification_code'])->first();
+//
+//        if (!$user) {
+//            return response()->json(['message' => 'Неверный код верификации или номер телефона.'], 400);
+//        }
+//        // Обновляем пароль и сбрасываем код верификации
+//        $user->verification_code = null; // Удаляем код после успешного сброса пароля
+//        $user->is_verified = 1;
+//        $user->save();
+//
+//        return response()->json(['message' => 'Пароль успешно изменен.']);
+//        // $status = Password::reset(
+//        //     $request->only('phone', 'password', 'password_confirmation', 'token'),
+//        //     function ($user, $password) {
+//        //         $user->password = Hash::make($password);
+//        //         $user->save();
+//        //     }
+//        // );
+//
+//        // if ($status === Password::PASSWORD_RESET) {
+//        //     return response()->json(['message' => 'Пароль успешно изменен.']);
+//        // }
+//
+//        // return response()->json(['message' => 'Не удалось сбросить пароль.'], 500);
+//    }
 
-        if ($validatedData->fails()) {
-            return response()->json($validatedData->errors(),400);
-        }
-        $validatedData = $validatedData->validate();
 
-        $status = Password::sendResetLink(
-            $request->only('email')
-        );
-
-        if ($status === Password::RESET_LINK_SENT) {
-            return response()->json(['message' => 'Ссылка на сброс пароля отправлена на ваш email.']);
-        }
-
-        return response()->json(['message' => 'Не удалось отправить ссылку на сброс пароля.'], 500);
-    }
-
-    /**
-     * @OA\Post(
-     *     path="/api/password/reset",
-     *     summary="Reset password",
-     *     description="Resets the user's password using a reset token",
-     *     operationId="resetPassword",
-     *     tags={"Auth"},
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\JsonContent(
-     *             required={"token", "email", "password", "password_confirmation"},
-     *             @OA\Property(property="token", type="string", example="abcdef123456"),
-     *             @OA\Property(property="email", type="string", format="email", example="user@example.com"),
-     *             @OA\Property(property="password", type="string", format="password", example="newpassword123"),
-     *             @OA\Property(property="password_confirmation", type="string", format="password", example="newpassword123")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Password reset successful",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="message", type="string", example="Пароль успешно изменен.")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=400,
-     *         description="Validation error",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="token", type="array",
-     *                 @OA\Items(type="string", example="The token field is required.")
-     *             ),
-     *             @OA\Property(property="email", type="array",
-     *                 @OA\Items(type="string", example="The email field is required.")
-     *             ),
-     *             @OA\Property(property="password", type="array",
-     *                 @OA\Items(type="string", example="The password must be at least 8 characters.")
-     *             )
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=500,
-     *         description="Failed to reset password",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="message", type="string", example="Не удалось сбросить пароль.")
-     *         )
-     *     )
-     * )
-     */
-    public function reset(Request $request)
-    {
-        $validatedData = Validator::make($request->all(), [
-            'token' => 'required',
-            'email' => 'required|email',
-            'password' => 'required|min:8|confirmed',
-        ]);
-
-        if ($validatedData->fails()) {
-            return response()->json($validatedData->errors(),400);
-        }
-        $validatedData = $validatedData->validate();
-
-        $status = Password::reset(
-            $request->only('email', 'password', 'password_confirmation', 'token'),
-            function ($user, $password) {
-                $user->password = Hash::make($password);
-                $user->save();
-            }
-        );
-
-        if ($status === Password::PASSWORD_RESET) {
-            return response()->json(['message' => 'Пароль успешно изменен.']);
-        }
-
-        return response()->json(['message' => 'Не удалось сбросить пароль.'], 500);
-    }
-
-    /**
-     * @OA\Get(
-     *     path="/api/user",
-     *     summary="Get current user information",
-     *     description="Returns information about the currently authenticated user",
-     *     operationId="getUserInfo",
-     *     tags={"User"},
-     *     security={{"sanctum":{}}},
-     *     @OA\Response(
-     *         response=200,
-     *         description="User information retrieved successfully",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="id", type="integer", example=1),
-     *             @OA\Property(property="name", type="string", example="John Doe"),
-     *             @OA\Property(property="email", type="string", format="email", example="johndoe@example.com"),
-     *             @OA\Property(property="phone", type="string", example="+1234567890"),
-     *             @OA\Property(property="username", type="string", example="johndoe"),
-     *             @OA\Property(property="city_id", type="integer", example=1),
-     *             @OA\Property(property="firstname", type="string", example="John"),
-     *             @OA\Property(property="lastname", type="string", example="Doe"),
-     *             @OA\Property(property="iin", type="string", example="123456789012"),
-     *             @OA\Property(property="is_visible", type="integer", example=1),
-     *             @OA\Property(property="photo_url", type="string", example="/storage/photos/johndoe.jpg"),
-     *             @OA\Property(property="role", type="string", example="user"),
-     *             @OA\Property(property="created_at", type="string", format="date-time", example="2023-01-01T12:00:00Z"),
-     *             @OA\Property(property="updated_at", type="string", format="date-time", example="2023-01-01T12:00:00Z")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=401,
-     *         description="Unauthenticated",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="message", type="string", example="Unauthenticated.")
-     *         )
-     *     )
-     * )
-     */
-    public function show(Request $request)
-    {
-        // Возвращаем информацию о текущем пользователе
-        return response()->json($request->user());
-    }
 }

@@ -9,18 +9,14 @@
 
     <title>{{ config('app.name', 'Laravel') }}</title>
 
-
     <!-- Fonts -->
     <link rel="dns-prefetch" href="//fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=Nunito" rel="stylesheet">
 
     <!-- Scripts -->
-    {{-- <script type="module" src="/@vite/client"></script> --}}
-    <link rel="stylesheet" href="/resources/sass/app.scss">
-    <script type="module" src="/resources/js/app.js"></script>
-    <link rel="stylesheet" href="/resources/css/custom.css">
-    {{-- @vite(['/resources/sass/app.scss', '/resources/js/app.js', '/resources/css/custom.css']) --}}
-
+    @viteReactRefresh
+    {{-- @vite(['resources/sass/app.scss', 'resources/js/app.js']) --}}
+    @vite(['resources/sass/app.scss', 'resources/js/app.js', 'resources/css/custom.css'])
 </head>
 <body>
     <div id="app">
@@ -37,13 +33,22 @@
                     <!-- Left Side Of Navbar -->
                     <ul class="navbar-nav me-auto">
 
-                        <li class="nav-item">
-                            <a class="nav-link" href="/api/documentation">{{ __('Swagger') }}</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="https://supermakers.pro/phpmyadmin">{{ __('PhpMyAdmin') }}</a>
-                        </li>
-
+                        @guest
+                        @else
+                            <li class="nav-item">
+                                <a class="nav-link" href="/api/documentation">{{ __('Swagger') }}</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="/phpmyadmin">{{ __('PhpMyAdmin') }}</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="https://mobizon.kz/panel/login">{{ __('Mobizon (zhandos998@gmail.com, Zz87713985075)') }}</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ url('/admin/logs') }}">Логи системы</a>
+                            </li>
+                        @endguest
+                        
                     </ul>
 
                     <!-- Right Side Of Navbar -->
@@ -57,9 +62,9 @@
                             @endif
 
                             @if (Route::has('register'))
-                                <li class="nav-item">
+                                {{-- <li class="nav-item">
                                     <a class="nav-link" href="{{ route('register') }}">{{ __('Register') }}</a>
-                                </li>
+                                </li> --}}
                             @endif
                         @else
                             <li class="nav-item dropdown">

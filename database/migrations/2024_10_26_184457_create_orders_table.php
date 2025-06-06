@@ -20,6 +20,7 @@ return new class extends Migration
             $table->unsignedInteger('master_time'); // Время, связанное с заказом (например, в минутах)
             $table->foreignId('status_id')->constrained('order_statuses')->onDelete('cascade'); // Привязка к таблице order_statuses
             $table->timestamps(); // Поля created_at и updated_at
+            $table->timestamp('current_group_sent_at')->nullable(); // Время отправки текущей группе мастеров
         });
     }
 

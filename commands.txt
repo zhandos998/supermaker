@@ -9,3 +9,19 @@ php artisan make:model UserAnswer -s
 
 
 php artisan make:middleware RoleMiddleware
+
+php artisan make:model MasterVideoCounts -s
+php artisan make:migration create_master_video_counts_table
+
+php artisan migrate --path=/database/migrations/2024_11_02_084142_create_questions_table.php
+php artisan migrate --path=/database/migrations/2024_11_02_084143_create_options_table.php
+php artisan migrate --path=/database/migrations/2024_11_02_084146_create_default_answers_table.php
+
+ALTER TABLE `default_answers`
+ADD CONSTRAINT `default_answers_video_id_foreign`
+FOREIGN KEY (`video_id`) REFERENCES `videos`(`id`)
+ON DELETE CASCADE;
+ALTER TABLE `default_answers`
+ADD CONSTRAINT `default_answers_survey_id_foreign`
+FOREIGN KEY (`survey_id`) REFERENCES `surveys`(`id`)
+ON DELETE CASCADE;

@@ -14,6 +14,7 @@ class VariableController extends Controller
      * @OA\Get(
      *     path="/api/variables",
      *     tags={"Variables"},
+     *     security={{"sanctum": {}}},
      *     summary="Get a list of variables",
      *     description="Returns a list of all variables.",
      *     @OA\Response(
@@ -32,6 +33,7 @@ class VariableController extends Controller
      * @OA\Get(
      *     path="/api/variables/{id}",
      *     tags={"Variables"},
+     *     security={{"sanctum": {}}},
      *     summary="Get a variable by ID",
      *     description="Returns a single variable",
      *     @OA\Parameter(
@@ -63,6 +65,7 @@ class VariableController extends Controller
      * @OA\Post(
      *     path="/api/variables",
      *     tags={"Variables"},
+     *     security={{"sanctum": {}}},
      *     summary="Create a new variable",
      *     description="Adds a new variable to the database",
      *     @OA\RequestBody(
@@ -99,6 +102,7 @@ class VariableController extends Controller
      * @OA\Put(
      *     path="/api/variables/{id}",
      *     tags={"Variables"},
+     *     security={{"sanctum": {}}},
      *     summary="Update an existing variable",
      *     description="Updates variable details by ID",
      *     @OA\Parameter(
@@ -147,6 +151,7 @@ class VariableController extends Controller
      * @OA\Delete(
      *     path="/api/variables/{id}",
      *     tags={"Variables"},
+     *     security={{"sanctum": {}}},
      *     summary="Delete a variable",
      *     description="Deletes a variable by ID",
      *     @OA\Parameter(

@@ -14,6 +14,7 @@ class StoreController extends Controller
      * @OA\Get(
      *     path="/api/stores",
      *     tags={"Stores"},
+     *     security={{"sanctum": {}}},
      *     summary="Get a list of stores",
      *     description="Returns a list of all stores.",
      *     @OA\Response(
@@ -32,6 +33,7 @@ class StoreController extends Controller
      * @OA\Get(
      *     path="/api/stores/{id}",
      *     tags={"Stores"},
+     *     security={{"sanctum": {}}},
      *     summary="Get a store by ID",
      *     description="Returns a single store",
      *     @OA\Parameter(
@@ -63,6 +65,7 @@ class StoreController extends Controller
      * @OA\Post(
      *     path="/api/stores",
      *     tags={"Stores"},
+     *     security={{"sanctum": {}}},
      *     summary="Create a new store",
      *     description="Adds a new store to the database",
      *     @OA\RequestBody(
@@ -103,6 +106,7 @@ class StoreController extends Controller
      * @OA\Put(
      *     path="/api/stores/{id}",
      *     tags={"Stores"},
+     *     security={{"sanctum": {}}},
      *     summary="Update an existing store",
      *     description="Updates store details by ID",
      *     @OA\Parameter(
@@ -155,6 +159,7 @@ class StoreController extends Controller
      * @OA\Delete(
      *     path="/api/stores/{id}",
      *     tags={"Stores"},
+     *     security={{"sanctum": {}}},
      *     summary="Delete a store",
      *     description="Deletes a store by ID",
      *     @OA\Parameter(

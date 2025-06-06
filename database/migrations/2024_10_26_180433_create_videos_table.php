@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('title'); // Название видео
             $table->text('description')->nullable(); // Описание видео
             $table->string('url'); // Ссылка на видео
-            $table->decimal('price', 10, 2)->nullable(); // Цена за видео
+            $table->decimal('price', 10, 2)->nullable(); // Цена видео
             $table->string('sizes')->nullable(); // Размеры видео (можно хранить в формате JSON, если несколько)
             $table->boolean('is_fixed')->default(false); // Фиксированное видео или нет
             $table->unsignedBigInteger('views_count')->default(0); // Счётчик просмотров

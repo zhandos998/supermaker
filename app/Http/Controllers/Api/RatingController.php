@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Rating; // Ensure you have a Rating model
+use App\Models\Variable; // Ensure you have a Rating model
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Validator;
+use Carbon\Carbon;
 
 class RatingController extends Controller
 {
@@ -14,6 +16,7 @@ class RatingController extends Controller
      * @OA\Get(
      *     path="/api/ratings",
      *     tags={"Ratings"},
+     *     security={{"sanctum": {}}},
      *     summary="Get a list of ratings",
      *     description="Returns a list of all ratings.",
      *     @OA\Response(
@@ -32,6 +35,7 @@ class RatingController extends Controller
      * @OA\Get(
      *     path="/api/ratings/{id}",
      *     tags={"Ratings"},
+     *     security={{"sanctum": {}}},
      *     summary="Get a rating by ID",
      *     description="Returns a single rating",
      *     @OA\Parameter(
@@ -63,6 +67,7 @@ class RatingController extends Controller
      * @OA\Post(
      *     path="/api/ratings",
      *     tags={"Ratings"},
+     *     security={{"sanctum": {}}},
      *     summary="Create a new rating",
      *     description="Adds a new rating to the database",
      *     @OA\RequestBody(
@@ -101,6 +106,7 @@ class RatingController extends Controller
      * @OA\Put(
      *     path="/api/ratings/{id}",
      *     tags={"Ratings"},
+     *     security={{"sanctum": {}}},
      *     summary="Update an existing rating",
      *     description="Updates rating details by ID",
      *     @OA\Parameter(
@@ -151,6 +157,7 @@ class RatingController extends Controller
      * @OA\Delete(
      *     path="/api/ratings/{id}",
      *     tags={"Ratings"},
+     *     security={{"sanctum": {}}},
      *     summary="Delete a rating",
      *     description="Deletes a rating by ID",
      *     @OA\Parameter(
@@ -175,4 +182,77 @@ class RatingController extends Controller
         $rating->delete();
         return response()->json(null, Response::HTTP_NO_CONTENT);
     }
+//
+//    public function CalculateMasterRatings($id=0)
+//    {
+//        $variables = Variable::whereIn('id', [2, 3, 4, 5])->pluck('value', 'id');
+//        $K1 = $variables[2] ?? 0;
+//        $K2 = $variables[3] ?? 0;
+//        $K3 = $variables[4] ?? 0;
+//        $K4 = $variables[5] ?? 0;
+//
+//        $fiveDaysAgo = Carbon::now()->subDays(5);
+//
+//        $masters = Master::pluck('id');
+//
+//        $ratings = [];
+//
+//        foreach ($masters as $masterId) {
+//            // Получаем P1, P2, P3, P4 за последние 5 дней
+//            $P1 = $this->calculateClickRate($masterId, $fiveDaysAgo);
+//            $P2 = $this->calculateReadRate($masterId, $fiveDaysAgo);
+//            $P3 = $this->calculateReplyRate($masterId, $fiveDaysAgo);
+//            $P4 = $this->calculateOrderRate($masterId, $fiveDaysAgo);
+//
+//            // Рассчитываем рейтинг
+//            $score = ($K1 * $P1) + ($K2 * $P2) + ($K3 * $P3) + ($K4 * $P4);
+//
+//            $ratings[] = [
+//                'master_id' => $masterId,
+//                'score' => $score,
+//                'updated_at' => now()
+//            ];
+//        }
+//
+//
+//        // Массовое обновление или вставка
+//        Rating::upsert($ratings, ['master_id'], ['score', 'updated_at']);
+//
+////        Log::info('Master ratings calculated successfully.');
+//
+////        return response()->json(null, Response::HTTP_NO_CONTENT);
+//    }
+//
+//    // P1 — % кликов на ролик от числа показов в ленте
+//    private function calculateClickRate($masterId, $fromDate)
+//    {
+//        $views = DB::table('video_views')->where('master_id', $masterId)->where('created_at', '>=', $fromDate)->count();
+//        $clicks = DB::table('profile_clicks')->where('master_id', $masterId)->where('created_at', '>=', $fromDate)->count();
+//        return $views ? ($clicks / $views) * 100 : 0;
+//    }
+//
+//    // P2 — % прочитанных запросов от общего количества полученных
+//    private function calculateReadRate($masterId, $fromDate)
+//    {
+//        $totalRequests = DB::table('requests')->where('master_id', $masterId)->where('created_at', '>=', $fromDate)->count();
+//        $readRequests = DB::table('requests')->where('master_id', $masterId)->where('is_read', true)->where('created_at', '>=', $fromDate)->count();
+//        return $totalRequests ? ($readRequests / $totalRequests) * 100 : 0;
+//    }
+//
+//    // P3 — % ответов мастера от общего числа запросов
+//    private function calculateReplyRate($masterId, $fromDate)
+//    {
+//        $totalRequests = DB::table('requests')->where('master_id', $masterId)->where('created_at', '>=', $fromDate)->count();
+//        $replies = DB::table('replies')->where('master_id', $masterId)->where('created_at', '>=', $fromDate)->count();
+//        return $totalRequests ? ($replies / $totalRequests) * 100 : 0;
+//    }
+//
+//    // P4 — % заказов от общего числа отправленных ответов
+//    private function calculateOrderRate($masterId, $fromDate)
+//    {
+//        $totalReplies = DB::table('replies')->where('master_id', $masterId)->where('created_at', '>=', $fromDate)->count();
+//        $orders = DB::table('orders')->where('master_id', $masterId)->where('created_at', '>=', $fromDate)->count();
+//        return $totalReplies ? ($orders / $totalReplies) * 100 : 0;
+//    }
+
 }

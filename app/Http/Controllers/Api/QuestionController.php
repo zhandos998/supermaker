@@ -14,6 +14,7 @@ class QuestionController extends Controller
      * @OA\Get(
      *     path="/api/questions",
      *     tags={"Questions"},
+     *     security={{"sanctum": {}}},
      *     summary="Get a list of questions",
      *     description="Returns a list of all questions.",
      *     @OA\Response(
@@ -32,6 +33,7 @@ class QuestionController extends Controller
      * @OA\Post(
      *     path="/api/questions",
      *     tags={"Questions"},
+     *     security={{"sanctum": {}}},
      *     summary="Create a new question",
      *     description="Creates a new question",
      *     @OA\RequestBody(
@@ -40,8 +42,8 @@ class QuestionController extends Controller
      *             required={"survey_id", "text"},
      *             @OA\Property(property="survey_id", type="integer", description="ID of the survey the question belongs to"),
      *             @OA\Property(property="text", type="string", description="Text of the question"),
-     *             @OA\Property(property="type", type="string", description="Type of the question (e.g., text, multiple choice)"),
-     *             @OA\Property(property="options", type="array", @OA\Items(type="string"), description="List of answer options for multiple choice questions")
+     *             @OA\Property(property="type_id", type="integer", description="Type of the question (e.g., text, multiple choice)"),
+     *             @OA\Property(property="comment", type="string", description="")
      *         )
      *     ),
      *     @OA\Response(
@@ -54,11 +56,13 @@ class QuestionController extends Controller
     public function store(Request $request)
     {
         $validatedData = Validator::make($request->all(), [
-            'survey_id' => 'required|integer|exists:surveys,id',
+            'survey_id' => 'required|exists:surveys,id',
+            // 'title' => 'required|string|max:255',
             'text' => 'required|string|max:255',
-            'type' => 'required|string|in:text,multiple-choice',
-            'options' => 'nullable|array',
-            'options.*' => 'string|max:255', // Ensure each option is a string
+            'type_id' => 'required|integer',
+            'comment' => 'nullable|string'
+            // 'options' => 'nullable|array',
+            // 'options.*' => 'string|max:255', // Ensure each option is a string
         ]);
 
         if ($validatedData->fails()) {
@@ -74,6 +78,7 @@ class QuestionController extends Controller
      * @OA\Get(
      *     path="/api/questions/{id}",
      *     tags={"Questions"},
+     *     security={{"sanctum": {}}},
      *     summary="Get a question by ID",
      *     description="Returns a single question",
      *     @OA\Parameter(
@@ -102,6 +107,7 @@ class QuestionController extends Controller
      * @OA\Put(
      *     path="/api/questions/{id}",
      *     tags={"Questions"},
+     *     security={{"sanctum": {}}},
      *     summary="Update a question",
      *     description="Updates an existing question",
      *     @OA\Parameter(
@@ -116,8 +122,8 @@ class QuestionController extends Controller
      *         @OA\JsonContent(
      *             @OA\Property(property="survey_id", type="integer", description="ID of the survey the question belongs to"),
      *             @OA\Property(property="text", type="string", description="Text of the question"),
-     *             @OA\Property(property="type", type="string", description="Type of the question (e.g., text, multiple choice)"),
-     *             @OA\Property(property="options", type="array", @OA\Items(type="string"), description="List of answer options for multiple choice questions")
+     *             @OA\Property(property="type_id", type="integer", description="Type of the question (e.g., text, multiple choice)"),
+     *             @OA\Property(property="comment", type="string", description="")
      *         )
      *     ),
      *     @OA\Response(response=200, description="Question updated successfully"),
@@ -134,18 +140,38 @@ class QuestionController extends Controller
         }
 
         $validatedData = Validator::make($request->all(), [
-            'survey_id' => 'sometimes|required|integer|exists:surveys,id',
-            'text' => 'sometimes|required|string|max:255',
-            'type' => 'sometimes|required|string|in:text,multiple-choice',
-            'options' => 'sometimes|nullable|array',
-            'options.*' => 'string|max:255',
+            'survey_id' => 'sometimes|exists:surveys,id',
+            'text' => 'sometimes|string|max:255',
+            // 'title' => 'sometimes|string|max:255',
+            'type_id' => 'sometimes|integer',
+            'comment' => 'nullable|string'
+            // 'options' => 'sometimes|nullable|array',
+            // 'options.*' => 'string|max:255',
         ]);
 
         if ($validatedData->fails()) {
             return response()->json($validatedData->errors(), Response::HTTP_BAD_REQUEST);
         }
 
-        $question->update($validatedData->validated());
+        $validatedData = $validatedData->validated();
+
+        if($request->filled('survey_id')){
+            $question->survey_id = $validatedData['survey_id'];
+        }
+
+        if($request->filled('text')){
+            $question->text = $validatedData['text'];
+        }
+
+        if($request->filled('type_id')){
+            $question->type_id = $validatedData['type_id'];
+        }
+
+        if($request->filled('comment')){
+            $question->comment = $validatedData['comment'];
+        }
+
+        $question->save();
 
         return response()->json($question, Response::HTTP_OK);
     }
@@ -154,6 +180,7 @@ class QuestionController extends Controller
      * @OA\Delete(
      *     path="/api/questions/{id}",
      *     tags={"Questions"},
+     *     security={{"sanctum": {}}},
      *     summary="Delete a question",
      *     description="Deletes a question by ID",
      *     @OA\Parameter(

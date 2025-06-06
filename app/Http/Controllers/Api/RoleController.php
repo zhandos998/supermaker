@@ -15,6 +15,7 @@ class RoleController extends Controller
      *     path="/api/roles",
      *     summary="Get list of roles",
      *     tags={"Roles"},
+     *     security={{"sanctum": {}}},
      *     @OA\Response(
      *         response=200,
      *         description="List of roles"
@@ -32,6 +33,7 @@ class RoleController extends Controller
      *     path="/api/roles",
      *     summary="Create a new role",
      *     tags={"Roles"},
+     *     security={{"sanctum": {}}},
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
@@ -69,6 +71,7 @@ class RoleController extends Controller
      *     path="/api/roles/{id}",
      *     summary="Get role by ID",
      *     tags={"Roles"},
+     *     security={{"sanctum": {}}},
      *     @OA\Parameter(
      *         name="id",
      *         in="path",
@@ -102,6 +105,7 @@ class RoleController extends Controller
      *     path="/api/roles/{id}",
      *     summary="Update role",
      *     tags={"Roles"},
+     *     security={{"sanctum": {}}},
      *     @OA\Parameter(
      *         name="id",
      *         in="path",
@@ -156,6 +160,7 @@ class RoleController extends Controller
      *     path="/api/roles/{id}",
      *     summary="Delete role",
      *     tags={"Roles"},
+     *     security={{"sanctum": {}}},
      *     @OA\Parameter(
      *         name="id",
      *         in="path",

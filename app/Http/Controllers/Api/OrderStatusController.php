@@ -12,8 +12,9 @@ class OrderStatusController extends Controller
 {
     /**
      * @OA\Get(
-     *     path="/api/order-statuses",
+     *     path="/api/order_statuses",
      *     tags={"Order Statuses"},
+     *     security={{"sanctum": {}}},
      *     summary="Get a list of order statuses",
      *     description="Returns a list of all order statuses.",
      *     @OA\Response(
@@ -30,8 +31,9 @@ class OrderStatusController extends Controller
 
     /**
      * @OA\Get(
-     *     path="/api/order-statuses/{id}",
+     *     path="/api/order_statuses/{id}",
      *     tags={"Order Statuses"},
+     *     security={{"sanctum": {}}},
      *     summary="Get an order status by ID",
      *     description="Returns a single order status",
      *     @OA\Parameter(
@@ -61,15 +63,17 @@ class OrderStatusController extends Controller
 
     /**
      * @OA\Post(
-     *     path="/api/order-statuses",
+     *     path="/api/order_statuses",
      *     tags={"Order Statuses"},
+     *     security={{"sanctum": {}}},
      *     summary="Create a new order status",
      *     description="Adds a new order status to the database",
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
-     *             required={"name"},
-     *             @OA\Property(property="name", type="string", example="Pending", description="Name of the order status"),
+     *             required={"name_for_user","name_for_master"},
+     *             @OA\Property(property="name_for_user", type="string", example="Pending", description="Name of the order status"),
+     *             @OA\Property(property="name_for_master", type="string", example="Pending", description="Name of the order status")
      *         )
      *     ),
      *     @OA\Response(
@@ -82,7 +86,8 @@ class OrderStatusController extends Controller
     public function store(Request $request)
     {
         $validatedData = Validator::make($request->all(), [
-            'name' => 'required|string|max:255|unique:order_statuses,name',
+            'name_for_user' => 'required|string|max:255|unique:order_statuses,name_for_user',
+            'name_for_master' => 'required|string|max:255|unique:order_statuses,name_for_master',
         ]);
 
         if ($validatedData->fails()) {
@@ -95,8 +100,9 @@ class OrderStatusController extends Controller
 
     /**
      * @OA\Put(
-     *     path="/api/order-statuses/{id}",
+     *     path="/api/order_statuses/{id}",
      *     tags={"Order Statuses"},
+     *     security={{"sanctum": {}}},
      *     summary="Update an existing order status",
      *     description="Updates order status details by ID",
      *     @OA\Parameter(
@@ -109,8 +115,9 @@ class OrderStatusController extends Controller
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
-     *             required={"name"},
-     *             @OA\Property(property="name", type="string", example="Shipped", description="Updated name of the order status"),
+     *             required={"name_for_user","name_for_master"},
+     *             @OA\Property(property="name_for_user", type="string", example="Shipped", description="Updated name of the order status"),
+     *             @OA\Property(property="name_for_master", type="string", example="Shipped", description="Updated name of the order status"),
      *         )
      *     ),
      *     @OA\Response(
@@ -129,7 +136,8 @@ class OrderStatusController extends Controller
         }
 
         $validatedData = Validator::make($request->all(), [
-            'name' => 'nullable|string|max:255|unique:order_statuses,name,' . $orderStatus->id,
+            'name_for_user' => 'nullable|string|max:255|unique:order_statuses,name_for_user,' . $orderStatus->id,
+            'name_for_master' => 'nullable|string|max:255|unique:order_statuses,name_for_master,' . $orderStatus->id,
         ]);
 
         if ($validatedData->fails()) {
@@ -142,8 +150,9 @@ class OrderStatusController extends Controller
 
     /**
      * @OA\Delete(
-     *     path="/api/order-statuses/{id}",
+     *     path="/api/order_statuses/{id}",
      *     tags={"Order Statuses"},
+     *     security={{"sanctum": {}}},
      *     summary="Delete an order status",
      *     description="Deletes an order status by ID",
      *     @OA\Parameter(

@@ -72,14 +72,16 @@ class UserController extends Controller
     // Форма для редактирования пользователя
     public function edit(User $user)
     {
-        return view('admin.users.edit', compact('user'));
+        $cities = City::all();
+        return view('admin.users.edit', compact('user','cities'));
     }
 
     // Обновление информации о пользователе
     public function update(Request $request, User $user)
     {
+//        dd($request);
         $request->validate([
-            'email' => 'required|email|unique:users,email,' . $user->id,
+            'email' => 'nullable|email|unique:users,email,' . $user->id,
             'password' => 'nullable|min:6',
             'phone' => 'required|unique:users,phone,' . $user->id,
             'username' => 'required|unique:users,username,' . $user->id,
@@ -88,11 +90,11 @@ class UserController extends Controller
             'lastname' => 'required',
             'iin' => 'required|unique:users,iin,' . $user->id,
             'is_visible' => 'nullable|boolean',
-            'photo_url' => 'nullable|url',
+            'photo_url' => 'nullable|image|mimes:jpeg,png,jpg|max:20480',
         ]);
 
         $user->update($request->only([
-            'email', 'phone', 'username', 'city_id', 'firstname', 'lastname', 'iin', 'is_visible', 'photo_url'
+            'email', 'phone', 'username', 'city_id', 'firstname', 'lastname', 'iin', 'is_visible', 'photo_url', 'wallet', 'videos_count'
         ]));
 
         if ($request->filled('password')) {

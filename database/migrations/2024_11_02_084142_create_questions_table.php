@@ -12,10 +12,13 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('questions', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('survey_id')->constrained('surveys')->onDelete('cascade');
-            $table->string('text');
-            $table->timestamps();
+            $table->id(); // Создаёт поле id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY
+            $table->foreignId('survey_id') // Создаёт поле survey_id BIGINT UNSIGNED
+                ->constrained('surveys')  // Указывает, что это внешний ключ, ссылающийся на таблицу surveys
+                ->onDelete('cascade');      // Удаление вопроса при удалении связанного опроса
+            $table->string('text');     // Поле для заголовка
+            $table->integer('type_id')->default(1); // Поле type_id с дефолтным значением 1
+            $table->timestamps();        // Поля created_at и updated_at
         });
     }
 

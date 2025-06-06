@@ -12,8 +12,9 @@ class CompanyTypeController extends Controller
 {
     /**
      * @OA\Get(
-     *     path="/api/company-types",
+     *     path="/api/company_types",
      *     tags={"Company Types"},
+     *     security={{"sanctum": {}}},
      *     summary="Get list of company types",
      *     description="Returns a list of all company types.",
      *     @OA\Response(
@@ -30,8 +31,9 @@ class CompanyTypeController extends Controller
 
     /**
      * @OA\Get(
-     *     path="/api/company-types/{id}",
+     *     path="/api/company_types/{id}",
      *     tags={"Company Types"},
+     *     security={{"sanctum": {}}},
      *     summary="Get a company type by ID",
      *     description="Returns a single company type",
      *     @OA\Parameter(
@@ -61,8 +63,9 @@ class CompanyTypeController extends Controller
 
     /**
      * @OA\Post(
-     *     path="/api/company-types",
+     *     path="/api/company_types",
      *     tags={"Company Types"},
+     *     security={{"sanctum": {}}},
      *     summary="Create a new company type",
      *     description="Adds a new company type to the database",
      *     @OA\RequestBody(
@@ -97,8 +100,9 @@ class CompanyTypeController extends Controller
 
     /**
      * @OA\Put(
-     *     path="/api/company-types/{id}",
+     *     path="/api/company_types/{id}",
      *     tags={"Company Types"},
+     *     security={{"sanctum": {}}},
      *     summary="Update an existing company type",
      *     description="Updates company type details by ID",
      *     @OA\Parameter(
@@ -145,8 +149,9 @@ class CompanyTypeController extends Controller
 
     /**
      * @OA\Delete(
-     *     path="/api/company-types/{id}",
+     *     path="/api/company_types/{id}",
      *     tags={"Company Types"},
+     *     security={{"sanctum": {}}},
      *     summary="Delete a company type",
      *     description="Deletes a company type by ID",
      *     @OA\Parameter(

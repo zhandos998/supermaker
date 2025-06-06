@@ -14,6 +14,7 @@ class TagController extends Controller
      * @OA\Get(
      *     path="/api/tags",
      *     tags={"Tags"},
+     *     security={{"sanctum": {}}},
      *     summary="Get a list of tags",
      *     description="Returns a list of all tags.",
      *     @OA\Response(
@@ -32,6 +33,7 @@ class TagController extends Controller
      * @OA\Get(
      *     path="/api/tags/{id}",
      *     tags={"Tags"},
+     *     security={{"sanctum": {}}},
      *     summary="Get a tag by ID",
      *     description="Returns a single tag",
      *     @OA\Parameter(
@@ -63,6 +65,7 @@ class TagController extends Controller
      * @OA\Post(
      *     path="/api/tags",
      *     tags={"Tags"},
+     *     security={{"sanctum": {}}},
      *     summary="Create a new tag",
      *     description="Adds a new tag to the database",
      *     @OA\RequestBody(
@@ -99,6 +102,7 @@ class TagController extends Controller
      * @OA\Put(
      *     path="/api/tags/{id}",
      *     tags={"Tags"},
+     *     security={{"sanctum": {}}},
      *     summary="Update an existing tag",
      *     description="Updates tag details by ID",
      *     @OA\Parameter(
@@ -147,6 +151,7 @@ class TagController extends Controller
      * @OA\Delete(
      *     path="/api/tags/{id}",
      *     tags={"Tags"},
+     *     security={{"sanctum": {}}},
      *     summary="Delete a tag",
      *     description="Deletes a tag by ID",
      *     @OA\Parameter(

@@ -13,9 +13,12 @@ return new class extends Migration
     {
         Schema::create('default_answers', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('survey_id')->constrained('surveys')->onDelete('cascade');
+            $table->foreignId('video_id')->constrained('videos')->onDelete('cascade');
             $table->foreignId('question_id')->constrained('questions')->onDelete('cascade');
             $table->foreignId('master_id')->constrained('users')->onDelete('cascade');
-            $table->text('answer_text'); // Текст ответа по умолчанию
+            $table->json('option_ids')->nullable(); // Текст ответа по умолчанию
+            $table->text('custom_value')->nullable(); // Текст ответа по умолчанию
             $table->timestamps();
         });
     }
