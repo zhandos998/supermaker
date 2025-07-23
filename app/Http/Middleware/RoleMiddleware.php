@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Traits\HasRolesAndPermissions;
 
 class RoleMiddleware
 {
@@ -16,24 +17,36 @@ class RoleMiddleware
      * @param null $permission
      * @return mixed
      */
-    public function handle($request, Closure $next, $role)
+    public function handle($request, Closure $next, $role, $guard = 'web')
     {
-        if (count(explode('|', $role))>1) {
-            $roles = explode('|', $role);
-            $b = false;
-            foreach ($roles as $role) {
-                $b=$b||Auth::user()->hasRole($role);
-                if ($b) break;
-            }
-            // print($b);
+        if (!auth($guard)->check()) {
+            return abort(403); // Пользователь не авторизован в указанном guard
+        }
 
-            if(!$b) {
+        $user = auth($guard)->user();
+
+        if (str_contains($role, '|')) {
+            $roles = explode('|', $role);
+            $hasAny = false;
+
+            foreach ($roles as $r) {
+                if ($user->hasRole($r)) {
+                    $hasAny = true;
+                    break;
+                }
+            }
+
+            if (!$hasAny) {
+                abort(404);
+            }
+        } else {
+            if (!$user->hasRole($role)) {
                 abort(404);
             }
         }
-        else if(!Auth::user()->hasRole($role)) {
-            abort(404);
-        }
+
         return $next($request);
     }
+
+
 }

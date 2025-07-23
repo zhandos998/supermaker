@@ -84,8 +84,14 @@ class FavoriteController extends Controller
         ]);
 
         if ($validatedData->fails()) {
-            return response()->json($validatedData->errors(), Response::HTTP_BAD_REQUEST);
+            $errorText = implode("\n", $validatedData->errors()->all());
+
+            return response()->json([
+                'message' => 'Данные недопустимы.'.$errorText,
+                'errors' => $errorText, // это строка
+            ], 422);
         }
+
 
         $favorite = Favorite::firstOrCreate([
             'user_id' => auth()->id(),

@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Gate;
 use Laravel\Telescope\IncomingEntry;
 use Laravel\Telescope\Telescope;
 use Laravel\Telescope\TelescopeApplicationServiceProvider;
+use Illuminate\Support\Facades\Route;
 
 class TelescopeServiceProvider extends TelescopeApplicationServiceProvider
 {
@@ -27,6 +28,39 @@ class TelescopeServiceProvider extends TelescopeApplicationServiceProvider
                    $entry->isFailedJob() ||
                    $entry->isScheduledTask() ||
                    $entry->hasMonitoredTag();
+        });
+
+        Telescope::tag(function (IncomingEntry $entry) {
+            if ($entry->type === 'request') {
+                $tags = [
+                    'status:' . $entry->content['response_status'],
+                ];
+
+                $path = parse_url($entry->content['uri'], PHP_URL_PATH);
+
+                if (str_starts_with($path, '/api/')) {
+                    $tags[] = 'path:api';
+                } else {
+                    $tags[] = 'path:web';
+                }
+
+                // Имя контроллера
+                $route = Route::getRoutes()->match(request());
+                $action = $route->getActionName(); // App\Http\Controllers\Api\UserController@index
+
+                if ($action && $action !== 'Closure') {
+                    $controller = explode('@', class_basename($action))[0] ?? null; // UserController
+                    if ($controller) {
+                        $tags[] = 'controller:' . $controller;
+                    }
+                } else {
+                    $tags[] = 'controller:unknown';
+                }
+
+                return $tags;
+            }
+
+            return [];
         });
     }
 

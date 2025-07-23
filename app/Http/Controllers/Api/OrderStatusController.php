@@ -90,8 +90,14 @@ class OrderStatusController extends Controller
             'name_for_master' => 'required|string|max:255|unique:order_statuses,name_for_master',
         ]);
 
+
         if ($validatedData->fails()) {
-            return response()->json($validatedData->errors(), Response::HTTP_BAD_REQUEST);
+            $errorText = implode("\n", $validatedData->errors()->all());
+
+            return response()->json([
+                'message' => 'Данные недопустимы.'.$errorText,
+                'errors' => $errorText, // это строка
+            ], 422);
         }
 
         $orderStatus = OrderStatus::create($validatedData->validated());
@@ -140,8 +146,14 @@ class OrderStatusController extends Controller
             'name_for_master' => 'nullable|string|max:255|unique:order_statuses,name_for_master,' . $orderStatus->id,
         ]);
 
+
         if ($validatedData->fails()) {
-            return response()->json($validatedData->errors(), Response::HTTP_BAD_REQUEST);
+            $errorText = implode("\n", $validatedData->errors()->all());
+
+            return response()->json([
+                'message' => 'Данные недопустимы.'.$errorText,
+                'errors' => $errorText, // это строка
+            ], 422);
         }
 
         $orderStatus->update(array_filter($validatedData->validated())); // Update only provided fields

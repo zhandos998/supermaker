@@ -11,6 +11,7 @@ use App\Models\UserAnswer; // Ensure you have a UserAnswer model
 use App\Models\UserAnswerImage;
 use App\Models\UserSurvey;
 use App\Models\QuickOrder;
+use App\Models\Variable;
 use App\Http\Controllers\Api\OrderController;
 
 use Illuminate\Http\Request;
@@ -78,7 +79,12 @@ class UserAnswerController extends Controller
         ]);
 
         if ($validatedData->fails()) {
-            return response()->json($validatedData->errors(), Response::HTTP_BAD_REQUEST);
+            $errorText = implode("\n", $validatedData->errors()->all());
+
+            return response()->json([
+                'message' => 'Данные недопустимы.'.$errorText,
+                'errors' => $errorText, // это строка
+            ], 422);
         }
 
         // Получение файла
@@ -296,7 +302,12 @@ class UserAnswerController extends Controller
         });
 
         if ($validatedData->fails()) {
-            return response()->json($validatedData->errors(), Response::HTTP_BAD_REQUEST);
+            $errorText = implode("\n", $validatedData->errors()->all());
+
+            return response()->json([
+                'message' => 'Данные недопустимы.'.$errorText,
+                'errors' => $errorText, // это строка
+            ], 422);
         }
 
         $validatedData = $validatedData->validated();
@@ -426,8 +437,6 @@ class UserAnswerController extends Controller
             'answers.*.custom_value' => 'nullable|string|max:255',
             'answers.*.image_urls' => 'nullable|array',
             'answers.*.image_urls.*' => 'nullable|string|starts_with:data:image/',
-//            'answers.*.image_urls.*' => 'nullable|string|starts_with:data:image/',
-//            'answers.*.image_urls.*' => 'nullable|file|image|max:5120', // до 5MB на фото
         ]);
         // Проверка уникальности комбинации survey_id, video_id, question_id и master_id
         $validated->after(function ($validator) use ($request) {
@@ -441,8 +450,14 @@ class UserAnswerController extends Controller
                 $validator->errors()->add('survey_id', 'Такая комбинация survey_id, video_id и user_id уже существует.');
             }
         });
+
         if ($validated->fails()) {
-            return response()->json($validated->errors(), Response::HTTP_BAD_REQUEST);
+            $errorText = implode("\n", $validated->errors()->all());
+
+            return response()->json([
+                'message' => 'Данные недопустимы.'.$errorText,
+                'errors' => $errorText, // это строка
+            ], 422);
         }
 
         $data = $validated->validated();
@@ -513,7 +528,7 @@ class UserAnswerController extends Controller
                 'image_urls' => !empty($uploadedImages) ? json_encode($uploadedImages, JSON_UNESCAPED_UNICODE) : null,
             ]);
         }
-
+//        dd($data);
         if (!is_null(Arr::get($data, 'video_id', null))){
             $video = Video::where('id',Arr::get($data, 'video_id', null))
                 ->first();
@@ -529,10 +544,11 @@ class UserAnswerController extends Controller
         else{
             $quickOrder = QuickOrder::create([
                 'user_id' => auth()->id(),
+                'user_survey_id' => $userSurvey->id,
                 'group_iter' => 0,
                 'refresh_time' => Carbon::now(),
                 'responded' => false,
-                'masters_left' => 10,
+                'masters_left' => Variable::where('id',14)->first()['value'],
             ]);
 
 //            Order::create([
@@ -669,7 +685,12 @@ class UserAnswerController extends Controller
         ]);
 
         if ($validatedData->fails()) {
-            return response()->json($validatedData->errors(), Response::HTTP_BAD_REQUEST);
+            $errorText = implode("\n", $validatedData->errors()->all());
+
+            return response()->json([
+                'message' => 'Данные недопустимы.'.$errorText,
+                'errors' => $errorText, // это строка
+            ], 422);
         }
 
         $validatedData = $validatedData->validated();

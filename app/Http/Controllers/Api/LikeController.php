@@ -34,7 +34,7 @@ class LikeController extends Controller
         // Получаем авторизованного пользователя через Sanctum
         $user = auth()->user();
 
-        $likes = Like::with(['user', 'video'])->where('user_id', $user->id)->get();
+        $likes = Like::with(['user', 'video'])->where('user_id', $user->id)->orderBy('id', 'desc')->get();
         return response()->json($likes, Response::HTTP_OK);
     }
 
@@ -65,9 +65,16 @@ class LikeController extends Controller
             'video_id' => 'required|integer|exists:videos,id', // Ensure the item exists
         ]);
 
+
         if ($validatedData->fails()) {
-            return response()->json($validatedData->errors(), Response::HTTP_BAD_REQUEST);
+            $errorText = implode("\n", $validatedData->errors()->all());
+
+            return response()->json([
+                'message' => 'Данные недопустимы.'.$errorText,
+                'errors' => $errorText, // это строка
+            ], 422);
         }
+
 
         $like = Like::firstOrCreate([
             'user_id' => auth()->id(),

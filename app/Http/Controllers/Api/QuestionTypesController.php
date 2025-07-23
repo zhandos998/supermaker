@@ -57,8 +57,14 @@ class QuestionTypesController extends Controller
             'name' => 'required|string|max:255',
         ]);
 
+
         if ($validatedData->fails()) {
-            return response()->json($validatedData->errors(), Response::HTTP_BAD_REQUEST);
+            $errorText = implode("\n", $validatedData->errors()->all());
+
+            return response()->json([
+                'message' => 'Данные недопустимы.'.$errorText,
+                'errors' => $errorText, // это строка
+            ], 422);
         }
 
         $questionType = QuestionType::create($validatedData->validated());
@@ -132,8 +138,14 @@ class QuestionTypesController extends Controller
             'name' => 'sometimes|string|max:255',
         ]);
 
+
         if ($validatedData->fails()) {
-            return response()->json($validatedData->errors(), Response::HTTP_BAD_REQUEST);
+            $errorText = implode("\n", $validatedData->errors()->all());
+
+            return response()->json([
+                'message' => 'Данные недопустимы.'.$errorText,
+                'errors' => $errorText, // это строка
+            ], 422);
         }
 
         $questionType->update($validatedData->validated());

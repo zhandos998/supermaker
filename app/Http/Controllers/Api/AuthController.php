@@ -119,39 +119,33 @@ class AuthController extends Controller
             // Только если role = user
             'username' => [Rule::requiredIf($request->role === 'user'), 'nullable', 'string', 'max:255'],
             // Эти поля обязательны только если role = master
-            'iin' => [Rule::requiredIf($request->role == 'master'), 'string', 'size:12', 'unique:users'],
-            'firstname' => [Rule::requiredIf($request->role == 'master'), 'string', 'max:255'],
-            'lastname' => [Rule::requiredIf($request->role == 'master'), 'string', 'max:255'],
-            'company_type' => [Rule::requiredIf($request->role == 'master'), 'string', 'in:ИП,ТОО'],
-            'company_name' => [Rule::requiredIf($request->role == 'master'), 'string'],
+            'iin' => ['nullable', 'string', 'size:12', 'unique:users'],
+            'firstname' => ['nullable', 'string', 'max:255'],
+            'lastname' => ['nullable', 'string', 'max:255'],
+            'company_type' => ['nullable', 'string', 'in:ИП,ТОО'],
+            'company_name' => ['nullable', 'string'],
+//            'iin' => [Rule::requiredIf($request->role == 'master'), 'string', 'size:12', 'unique:users'],
+//            'firstname' => [Rule::requiredIf($request->role == 'master'), 'string', 'max:255'],
+//            'lastname' => [Rule::requiredIf($request->role == 'master'), 'string', 'max:255'],
+//            'company_type' => [Rule::requiredIf($request->role == 'master'), 'string', 'in:ИП,ТОО'],
+//            'company_name' => [Rule::requiredIf($request->role == 'master'), 'string'],
 //            'description' => [Rule::requiredIf($request->role == 'master'), 'string', 'max:500'],
+        ], [
+            'phone.unique' => 'Такой номер телефона уже зарегистрирован.',
         ]);
 
         if ($validatedData->fails()) {
-            return response()->json($validatedData->errors(), 400);
+            $errorText = implode("\n", $validatedData->errors()->all());
+
+            return response()->json([
+                'message' => 'Данные недопустимы.'.$errorText,
+                'errors' => $errorText, // это строка
+            ], 422);
         }
 
+
+
         $data = $validatedData->validated();
-//        // Проверка роли "master" вручную
-//        if ($data['role'] === 'master') {
-//            $validator = Validator::make($request->all(), [
-//                'iin' => 'required|string|size:12|unique:users',
-//                'firstname' => 'required|string|max:255',
-//                'lastname' => 'required|string|max:255',
-//                'company_type' => 'required|string|in:ИП,ТОО',
-//                'company_name' => 'required|string',
-//                'description' => 'required|string|max:500',
-//            ]);
-//
-//            if ($validator->fails()) {
-//                return response()->json($validator->errors(), 422);
-//            }
-//
-//            $data = array_merge($data, $validator->validated());
-//        }
-
-        // return ($data);
-
 
 
         // Сохранение фото, если загружено
@@ -163,9 +157,9 @@ class AuthController extends Controller
             $data['photo_url'] = $path;
         }
 
-//        $verificationCode = random_int(100000, 999999);
-        $verificationCode = 000000;
-//        $this->funcSendVerificationCode($data['phone'], $verificationCode);
+        $verificationCode = random_int(100000, 999999);
+//        $verificationCode = 000000;
+        $this->funcSendVerificationCode($data['phone'], $verificationCode);
 //        formatPhoneNumber
 //        $data['phone'] = $this->formatPhoneNumber($data['phone']);
 //        $data['company_type'] = $data['company_type'] ?? null;
@@ -359,7 +353,12 @@ class AuthController extends Controller
         $phone = $this->formatPhoneNumber($request->phone);
 
         if ($validatedData->fails()) {
-            return response()->json($validatedData->errors(), 400);
+            $errorText = implode("\n", $validatedData->errors()->all());
+
+            return response()->json([
+                'message' => 'Данные недопустимы.'.$errorText,
+                'errors' => $errorText, // это строка
+            ], 422);
         }
 
         $user = User::where('phone', $phone)->where('verification_code', $request->verification_code)->first();
@@ -424,7 +423,12 @@ class AuthController extends Controller
         ]);
 
         if ($validatedData->fails()) {
-            return response()->json($validatedData->errors(), 400);
+            $errorText = implode("\n", $validatedData->errors()->all());
+
+            return response()->json([
+                'message' => 'Данные недопустимы.'.$errorText,
+                'errors' => $errorText, // это строка
+            ], 422);
         }
         // Извлечение данных
         $validatedData = $validatedData->validate();
@@ -432,7 +436,7 @@ class AuthController extends Controller
 
         // Генерация кода для сброса пароля
         $resetCode = rand(100000, 999999);
-        $resetCode = 000000;
+//        $resetCode = 000000;
 
         // Находим пользователя по номеру телефона
         $user = User::where('phone', $phone)->first();
@@ -504,14 +508,22 @@ class AuthController extends Controller
         ]);
 
         if ($validatedData->fails()) {
-            return response()->json($validatedData->errors(),400);
+            $errorText = implode("\n", $validatedData->errors()->all());
+
+            return response()->json([
+                'message' => 'Данные недопустимы.'.$errorText,
+                'errors' => $errorText, // это строка
+            ], 422);
         }
         $validatedData = $validatedData->validate();
 
         $phone = $this->formatPhoneNumber($request->phone);
         $user = User::where('phone', $phone)->first();
         if (!$user) {
-            return response()->json(['message' => 'User not found'], 404);
+            return response()->json([
+                'message' => 'Данные недопустимы.'.'Пользователь не зарегистрирован!',
+                'errors' => 'Пользователь не зарегистрирован!', // это строка
+            ], 404);
         }
 
         $token = $user->createToken('api-token')->plainTextToken;

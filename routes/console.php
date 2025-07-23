@@ -13,7 +13,7 @@ use App\Console\Commands\CalculateMasterRatings;
 // })->purpose('Display an inspiring quote')->hourly();
 
 Schedule::call(function () {
-    app(OrderController::class)->SendQuickOrdersByUserId();
+    app(OrderController::class)->QuickOrdersUpdates();
 })->hourly();
 
 Schedule::call(function () {
@@ -23,3 +23,5 @@ Schedule::call(function () {
 Schedule::call(function () {
     app(CalculateMasterRatings::class)->handle();
 })->everyMinute();
+
+Schedule::command('telescope:prune --hours=168')->daily();

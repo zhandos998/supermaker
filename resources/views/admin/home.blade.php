@@ -3,23 +3,23 @@
 @section('content')
 <div class="container-flued">
     <div class="row justify-content-center">
-        <div class="col-md-12">
+        <div class="col-md-8">
             <div class="card">
                 <div class="card-header">{{ __('Dashboard') }}</div>
 
-                <div class="card-body">
+                <div class="card-body" style="align-self: center;">
                     @if (session('status'))
                         <div class="alert alert-success" role="alert">
                             {{ session('status') }}
                         </div>
                     @endif
 
-                        <a href="/admin/users" class="btn btn-primary">{{__('Users')}}</a>
-                        <a href="/admin/payments" class="btn btn-primary">{{__('Payments')}}</a>
-                        <a href="/admin/payment_statuses" class="btn btn-primary">{{__('Payment_statuses')}}</a><br>
-                        <a href="/admin/videos" class="btn btn-primary">{{__('Videos')}}</a>
-                        <a href="/admin/cities" class="btn btn-primary">{{__('Cities')}}</a>
-                        <a href="/admin/countries" class="btn btn-primary">{{__('Countries')}}</a><br>
+                        <a href="/admin/users" class="btn btn-primary">{{__('Пользователи')}}</a>
+                        <a href="/admin/payments" class="btn btn-primary">{{__('Оплаты')}}</a>
+                        <a href="/admin/payment_statuses" class="btn btn-primary">{{__('Статусы оплаты')}}</a><br>
+                        <a href="/admin/videos" class="btn btn-primary">{{__('Видео')}}</a>
+                        <a href="/admin/cities" class="btn btn-primary">{{__('Города')}}</a>
+                        <a href="/admin/countries" class="btn btn-primary">{{__('Страны')}}</a><br>
 {{--                        <a href="/admin/order_reports" class="btn btn-primary">{{__('order_reports')}}</a>--}}
 {{--                        <a href="/admin/order_statuses" class="btn btn-primary">{{__('order_statuses')}}</a><br>--}}
 {{--                        <a href="/admin/files" class="btn btn-primary">{{__('files')}}</a>--}}

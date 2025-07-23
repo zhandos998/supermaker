@@ -2462,8 +2462,8 @@
                         "application/json": {
                             "schema": {
                                 "properties": {
-                                    "status_id": {
-                                        "description": "Updated status ID",
+                                    "status": {
+                                        "description": "Updated status ID (1 or 0)",
                                         "type": "integer"
                                     },
                                     "master_price": {
@@ -2473,10 +2473,6 @@
                                     },
                                     "master_time": {
                                         "description": "Updated master time",
-                                        "type": "integer"
-                                    },
-                                    "video_id": {
-                                        "description": "Updated video ID",
                                         "type": "integer"
                                     }
                                 },
@@ -2629,6 +2625,40 @@
                     },
                     "400": {
                         "description": "Bad request"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/quick_orders/{id}": {
+            "delete": {
+                "tags": [
+                    "Orders"
+                ],
+                "summary": "Delete an quick_orders",
+                "description": "Deletes an quick_orders by ID",
+                "operationId": "0fb8358a56f82f353f8198cb32ad9e0b",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the quick_orders to delete",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "quick_orders deleted"
+                    },
+                    "404": {
+                        "description": "quick_orders not found"
                     }
                 },
                 "security": [

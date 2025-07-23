@@ -11,6 +11,18 @@ use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
+    public function topup(Request $request, User $user)
+    {
+        $request->validate([
+            'amount' => 'required|numeric|min:1'
+        ]);
+
+        $user->wallet += $request->amount;
+        $user->save();
+
+        return back()->with('success', 'Баланс успешно пополнен.');
+    }
+
     public function index()
     {
         $users = User::all();

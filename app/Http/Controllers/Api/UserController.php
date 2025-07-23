@@ -177,8 +177,12 @@ class UserController extends Controller
         ]);
 
         if ($validatedData->fails()) {
-            return response()->json($validatedData->errors(),400);
+            $errorText = implode("\n", $validatedData->errors()->all());
 
+            return response()->json([
+                'message' => 'Данные недопустимы.'.$errorText,
+                'errors' => $errorText, // это строка
+            ], 422);
         }
 
 
@@ -194,7 +198,12 @@ class UserController extends Controller
             ]);
 
             if ($validator->fails()) {
-                return response()->json($validator->errors(), 422);
+                $errorText = implode("\n", $validatedData->errors()->all());
+
+                return response()->json([
+                    'message' => 'Данные недопустимы.'.$errorText,
+                    'errors' => $errorText, // это строка
+                ], 422);
             }
 
             $data = array_merge($data, $validator->validated());
@@ -326,7 +335,6 @@ class UserController extends Controller
      *     )
      * )
      */
-
     // Обновление информации о пользователе
     public function update(Request $request, $id)
     {
@@ -338,22 +346,21 @@ class UserController extends Controller
 
         // Основная валидация
         $validatedData = Validator::make($request->all(), [
-//            'name' => 'nullable|string|max:255',
-//            'email' => 'nullable|string|email|max:255|unique:users,email,' . $user->id,
-//            'password' => 'nullable|string|min:8|confirmed',
             'phone' => 'nullable|string|max:15|unique:users,phone,' . $user->id,
             'username' => 'nullable|string|max:255|unique:users,username,' . $user->id,
             'city_id' => 'nullable|integer|exists:cities,id',
-//            'firstname' => 'nullable|string|max:255',
-//            'lastname' => 'nullable|string|max:255',
-//            'iin' => 'nullable|string|size:12|unique:users,iin,' . $user->id,
             'is_visible' => 'nullable|integer|in:0,1',
-            'photo_url' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
             'role' => 'nullable|string|in:user,master',
         ]);
 
         if ($validatedData->fails()) {
-            return response()->json($validatedData->errors(), 400);
+            $errorText = implode("\n", $validatedData->errors()->all());
+
+            return response()->json([
+                'message' => 'Данные недопустимы.'.$errorText,
+                'errors' => $errorText, // это строка
+            ], 422);
         }
 
         $data = $validatedData->validated();
@@ -370,7 +377,12 @@ class UserController extends Controller
             ]);
 
             if ($additionalValidation->fails()) {
-                return response()->json($additionalValidation->errors(), 400);
+                $errorText = implode("\n", $additionalValidation->errors()->all());
+
+                return response()->json([
+                    'message' => 'Данные недопустимы.'.$errorText,
+                    'errors' => $errorText, // это строка
+                ], 422);
             }
 
             $data = array_merge($data, $additionalValidation->validated());
@@ -392,14 +404,14 @@ class UserController extends Controller
         foreach ($data as $key => $value) {
             if ($key === 'password') {
                 $user->password = Hash::make($value);
-            } elseif ($key === 'photo_url' && $request->hasFile('photo_url')) {
+            } elseif ($key === 'photo' && $request->hasFile('photo')) {
                 // Удаляем предыдущую фотографию, если она существует
                 if ($user->photo_url && Storage::disk('public')->exists($user->photo_url)) {
                     Storage::disk('public')->delete($user->photo_url);
                 }
 
                 // Сохраняем новую фотографию
-                $user->photo_url = $request->file('photo_url')->store('photos/users', 'public');
+                $user->photo_url = 'https://mebelplace.kz/storage/'.$request->file('photo')->store('photos/users', 'public');
             } elseif ($key === 'role') {
                 continue;
             } else {

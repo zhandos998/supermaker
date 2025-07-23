@@ -3,7 +3,7 @@
 @section('content')
 <div class="container">
     <div class="row justify-content-center">
-        <div class="col-md-8">
+        <div class="col-md-11">
             <div class="card">
                 <div class="card-header">{{ __('Users') }}</div>
 
@@ -14,12 +14,13 @@
                         <thead>
                             <tr>
                                 <th>{{ __('ID') }}</th>
-                                <th>{{ __('Name') }}</th>
-                                <th>{{ __('Phone') }}</th>
-                                <th>{{ __('Username') }}</th>
-                                <th>{{ __('wallet') }}</th>
-                                <th>{{ __('videos_count') }}</th>
-                                <th>{{ __('Actions') }}</th>
+                                <th>{{ __('Имя') }}</th>
+                                <th>{{ __('Номер телефона') }}</th>
+                                <th>{{ __('Ник') }}</th>
+                                <th>{{ __('Кошелек') }}</th>
+                                <th>{{ __('Количество дополнительных видео') }}</th>
+                                <th>{{ __('Пополнить') }}</th>
+                                <th>{{ __('Действия') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -31,6 +32,14 @@
                                 <td>{{ $user->username }}</td>
                                 <td>{{ $user->wallet }}</td>
                                 <td>{{ $user->videos_count }}</td>
+                                <td>
+
+                                    <form action="{{ route('admin.users.topup', $user->id) }}" method="POST" style="display:inline-flex; align-items: center; gap: 4px; margin-top: 5px;">
+                                        @csrf
+                                        <input type="number" name="amount" class="form-control form-control-sm" placeholder="0" style="width: 80px;" required>
+                                        <button type="submit" class="btn btn-outline-success btn-sm">{{ __('Пополнить') }}</button>
+                                    </form>
+                                </td>
                                 <td>
                                     <a href="{{ route('admin.users.show', $user->id) }}" class="btn btn-outline-primary btn-sm me-2">{{ __('View') }}</a>
                                     <a href="{{ route('admin.users.edit', $user->id) }}" class="btn btn-outline-primary btn-sm me-2">{{ __('Edit') }}</a>

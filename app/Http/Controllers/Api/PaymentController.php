@@ -114,8 +114,14 @@ class PaymentController extends Controller
             'description' => 'nullable|string|max:255',
         ]);
 
+
         if ($validatedData->fails()) {
-            return response()->json($validatedData->errors(), Response::HTTP_BAD_REQUEST);
+            $errorText = implode("\n", $validatedData->errors()->all());
+
+            return response()->json([
+                'message' => 'Данные недопустимы.'.$errorText,
+                'errors' => $errorText, // это строка
+            ], 422);
         }
 
         $filePath = $request->file('file')->store('documents/payments', 'public');
@@ -195,8 +201,14 @@ class PaymentController extends Controller
             'file' => 'nullable|file|mimes:pdf|max:10240', // Проверка загружаемого файла
         ]);
 
+
         if ($validatedData->fails()) {
-            return response()->json($validatedData->errors(), Response::HTTP_BAD_REQUEST);
+            $errorText = implode("\n", $validatedData->errors()->all());
+
+            return response()->json([
+                'message' => 'Данные недопустимы.'.$errorText,
+                'errors' => $errorText, // это строка
+            ], 422);
         }
 
         // Если загружен новый файл

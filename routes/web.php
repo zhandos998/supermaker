@@ -39,6 +39,7 @@ Auth::routes();
 Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
 
 Route::get('/admin', [AdminController::class, 'index'])->name('admin_index');
+Route::post('/admin/users/{user}/topup', [UserController::class, 'topup'])->name('admin.users.topup');
 
 Route::prefix('admin')->name('admin.')->group(function () {
     Route::resource('users', UserController::class);
@@ -60,7 +61,6 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
 // Route::post('/api/verify-account', [AuthController::class, 'verifyAccount']);
 
-Auth::routes();
 
 Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
 
@@ -68,3 +68,10 @@ Route::get('/admin/logs', [\Rap2hpoutre\LaravelLogViewer\LogViewerController::cl
 //    ->middleware(['auth', 'admin']);
 
 Route::view('/policy', 'policy')->name('policy');
+
+
+//Route::middleware(['auth:sanctum'])->group(function () {
+//    Route::get('/api/documentation', function () {
+//        return view('l5-swagger::index');
+//    });
+//});

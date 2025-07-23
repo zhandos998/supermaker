@@ -7,12 +7,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class City extends Model
 {
-    use HasFactory;
+    protected $fillable = ['region_id', 'name'];
+    protected $hidden = ['created_at', 'updated_at'];
 
-    protected $fillable = ['name', 'country_id'];
-
-    public function country()
+    public function region()
     {
-        return $this->belongsTo(Country::class);
+        return $this->belongsTo(Region::class);
     }
 }

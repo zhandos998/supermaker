@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\CityController;
 use App\Http\Controllers\Api\CountryController;
+use App\Http\Controllers\Api\RegionController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\PaymentStatusController;
 use App\Http\Controllers\Api\StoreController;
@@ -29,6 +30,11 @@ use App\Http\Controllers\Api\UserAnswerController;
 use App\Http\Controllers\Api\FileController;
 use App\Http\Controllers\Api\LikeController;
 
+
+Route::get('/countries', [CountryController::class, 'index']);
+Route::get('/regions', [RegionController::class, 'index']);     // ?country_id=1
+Route::get('/cities', [CityController::class, 'index']);
+
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
@@ -45,6 +51,7 @@ Route::middleware('auth:sanctum')->get('/user', [UserController::class, 'show_cu
 
 // ----------------------------------------------------------------------------------------------------
 
+Route::middleware('auth:sanctum')->get('countries/{id}/regions-cities', [CountryController::class, 'showWithRegionsAndCities']);
 Route::middleware('auth:sanctum')->post('default_answers/GetDefaultAnswersByVideoID', [DefaultAnswerController::class,'GetDefaultAnswersByVideoID']);
 Route::middleware('auth:sanctum')->post('default_answers/AddDefaultAnswersWithImages', [DefaultAnswerController::class,'AddDefaultAnswersWithImages']);
 
@@ -67,7 +74,7 @@ Route::get('videos/GetVideosByUserID/{user_id}', [VideoController::class, 'GetVi
 Route::middleware('auth:sanctum')->get('orders/GetOrderByMasterID/{id}', [OrderController::class, 'GetOrderByMasterID']);
 Route::middleware('auth:sanctum')->get('orders/GetOrderByUserID/{id}', [OrderController::class, 'GetOrderByUserID']);
 Route::middleware('auth:sanctum')->get('quick_orders/{quick_order_id}', [OrderController::class, 'show_quick_order']);
-Route::middleware('auth:sanctum')->post('quick_orders', [OrderController::class, 'store_quick_order']);
+Route::middleware('auth:sanctum')->post('quick_orders/{quick_order_id}', [OrderController::class, 'store_quick_order']);
 
 //Route::middleware('auth:sanctum')->post('/masters/{id}/click', [UserController::class, 'trackProfileClick']);
 

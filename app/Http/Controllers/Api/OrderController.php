@@ -117,7 +117,7 @@ class OrderController extends Controller
         return response()->json(['message' => 'Quick order created and sent to masters.']);
     }
 
-    public function SendQuickOrdersByUserId($userId = 0)
+    public function QuickOrdersUpdates()
     {
         $quick_order_iteration = Variable::where('id',8)->first()['value']; // 3 За раз отправлят к N мастерам заявку(ордер)
         // Находим активные быстрые заказы
@@ -129,6 +129,13 @@ class OrderController extends Controller
             $quickOrder->save();
         }
 
+        Order::where('created_at', '<=', Carbon::now()->subHours(24))
+            ->where('status_id',2)
+            ->update(['status_id' => 3]);
+
+        Order::where('created_at', '<=', Carbon::now()->subDays(14))
+            ->where('status_id',3)
+            ->delete();
     }
 
     /**
@@ -236,60 +243,40 @@ class OrderController extends Controller
                 }
             }
 
-//            if ($statusIds[0] == 1 && auth('sanctum')->user()->role == 'master' ){
-//                // Применяем фильтрацию по массиву status_id
-//                $orders->whereIn('status_id', [1,2,8]);
-//            }
-//            else if ($statusIds[0] == 10 && auth('sanctum')->user()->role == 'master' ){
-//                // Применяем фильтрацию по массиву status_id
-//                $orders->whereIn('status_id', [3,5,9,10,12]);
-//            }
-//            else if ($statusIds[0] == 14 && auth('sanctum')->user()->role == 'master' ){
-//                // Применяем фильтрацию по массиву status_id
-//                $orders->whereIn('status_id', [4,6,7,11,13,14]);
-//            }
-
 //            masters
-//            В обработке
-            if ($statusIds[0] == 3){
+//            Новые заявки
+            if ($statusIds[0] == 1){
                 // Применяем фильтрацию по массиву status_id
-                $orders = $orders->whereIn('status_id', [1,2,8]);
+                $orders = $orders->whereIn('status_id', [1]);
             }
-//            Принятые
-            else if ($statusIds[0] == 4){
-                // Применяем фильтрацию по массиву status_id
-                $orders = $orders->whereIn('status_id', [9]);
-            }
-//            Выполненные
-            else if ($statusIds[0] == 5){
-                // Применяем фильтрацию по массиву status_id
-                $orders = $orders->whereIn('status_id', [4,6,7,11,13,14]);
-            }
-//            users
-//            Отправленные
-            else if ($statusIds[0] == 1){
-                // Применяем фильтрацию по массиву status_id
-                $orders = $orders->whereIn('status_id', [1,8,9]);
-            }
-//            отвеченные
-            else if ($statusIds[0] == 10){
+//            Ответы
+            else if ($statusIds[0] == 2){
                 // Применяем фильтрацию по массиву status_id
                 $orders = $orders->whereIn('status_id', [2]);
             }
-//            Принятые
-            else if ($statusIds[0] == 14){
+//            Архив
+            else if ($statusIds[0] == 3){
                 // Применяем фильтрацию по массиву status_id
-                $orders = $orders->whereIn('status_id', [4,6,7,13,14]);
+                $orders = $orders->whereIn('status_id', [3]);
+            }
+//            users
+//            Отправленные
+            else if ($statusIds[0] == 4){
+                // Применяем фильтрацию по массиву status_id
+                $orders = $orders->whereIn('status_id', [1]);
+            }
+//            Отвеченные
+            else if ($statusIds[0] == 5){
+                // Применяем фильтрацию по массиву status_id
+                $orders = $orders->whereIn('status_id', [2]);
             }
 //            Архив
-            else if ($statusIds[0] == 15){
+            else if ($statusIds[0] == 6){
                 // Применяем фильтрацию по массиву status_id
-                $orders = $orders->whereIn('status_id', [3,5,10,12,15,11]);
+                $orders = $orders->whereIn('status_id', [3]);
             }
-//            // Применяем фильтрацию по массиву status_id
-//            $orders->whereIn('status_id', $statusIds);
+
         }
-//        dd(auth('sanctum')->user()->hasRole('master'));
         if (auth('sanctum')->user()->hasRole('master')){
 
             $orders = $orders
@@ -297,6 +284,7 @@ class OrderController extends Controller
                 ->with([
                     'user_surveys.user_answers.question',
                 ]) // Подгружаем связанные данные
+                ->orderBy('quick_order_id')
                 ->orderBy('created_at', 'desc')
                 ->get();
 
@@ -307,35 +295,21 @@ class OrderController extends Controller
                 ->with([
                     'user_surveys.user_answers.question',
                 ]) // Подгружаем связанные данные
+                ->orderBy('quick_order_id')
                 ->orderBy('created_at', 'desc')
                 ->get();
         }
+//        print(explode(',', $request->query('status_id'))[0]);
+//        print('--------------------------------------');
 
-//        foreach($orders as $order){
-//            if (!is_null($order->user_survey_id)){
-//                foreach($order->user_surveys->user_answers as $user_answer){
-//                    $user_answer->options = Option::whereIn('id',json_decode($user_answer->option_ids))->get();
-//                }
-//            }
-//        }
-
-
-
-//        if(auth('sanctum')->id() == 2){
-//            $orders = $orders
-//                ->where('master_id',null)
-//                ->with([
-//                    'user_surveys.user_answers.question',
-//                ]) // Подгружаем связанные данные
-//                ->orderBy('created_at', 'desc')
-//                ->get();
+        if(explode(',', $request->query('status_id'))[0]==4){
             $quick_orders = QuickOrder::where('is_active',1)
                 ->with([
                     'user_surveys.user_answers.question',
                 ]) // Подгружаем связанные данные
+                ->orderBy('created_at', 'desc')
                 ->get();
 
-//            return response()->json($quick_orders, Response::HTTP_OK);
             foreach($orders as $order) {
                 if (
                     !is_null($order->user_survey_id) &&
@@ -350,11 +324,67 @@ class OrderController extends Controller
                     }
                 }
 
-                $order->is_quick_order = false;
+//                $order->is_quick_order = $order->quick_order_id !== null;
+                $order->is_under_video = $order->quick_order_id == null;
             }
-//            $orders->quick_orders = $quick_orders;
-//            return response()->json($orders, Response::HTTP_OK);
 
+//            return response()->json($quick_orders, Response::HTTP_OK);
+//            dd();
+            foreach($quick_orders as $quick_order) {
+                $quick_order->video_id = null;
+                $quick_order->status_id = 9;
+                $quick_order->quick_order_id = $quick_order->id;
+                $quick_order->master_id = 2;
+                $quick_order->master_price = null;
+                $quick_order->master_time = null;
+                $quick_order->master_comment = null;
+                $quick_order->is_read = 0;
+                $quick_order->user_survey_id = $quick_order->user_surveys[0]->id;
+//                $quick_order->user_survey_id = $quick_order->user_surveys[0]->id;
+                $quick_order->is_quick_order = true;
+                $quick_order->is_under_video = false;
+                $quick_order->title = optional($quick_order->user_surveys->first())
+                        ->user_answers->first()
+                        ?->options_data[0]->option_text ?? null;
+            }
+
+            $combined = $orders->merge($quick_orders);
+
+            return response()->json($combined, Response::HTTP_OK);
+        }
+        else
+        if(explode(',', $request->query('status_id'))[0]==1){
+
+            $quick_orders = QuickOrder::where('is_active',1)
+                ->whereNotExists(function ($query) {
+                    $query->select(DB::raw(1))
+                        ->from('orders')
+                        ->whereColumn('orders.quick_order_id', 'quick_orders.id')
+                        ->where('orders.master_id', auth('sanctum')->id());
+                })
+                ->with([
+                    'user_surveys.user_answers.question',
+                ]) // Подгружаем связанные данные
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            foreach($orders as $order) {
+                if (
+                    !is_null($order->user_survey_id) &&
+                    $order->relationLoaded('user_surveys') &&
+                    $order->user_surveys // существует
+                ) {
+                    foreach($order->user_surveys->user_answers ?? [] as $user_answer) {
+                        $user_answer->options = Option::whereIn(
+                            'id',
+                            json_decode($user_answer->option_ids ?? '[]')
+                        )->get();
+                    }
+                }
+
+//                $order->is_quick_order = $order->quick_order_id !== null;
+                $order->is_under_video = $order->quick_order_id == null;
+            }
             foreach($quick_orders as $quick_order) {
                 $quick_order->video_id = null;
                 $quick_order->status_id = 9;
@@ -366,6 +396,10 @@ class OrderController extends Controller
                 $quick_order->is_read = 0;
                 $quick_order->user_survey_id = $quick_order->user_surveys[0]->id;
                 $quick_order->is_quick_order = true;
+                $quick_order->is_under_video = false;
+                $quick_order->title = optional($quick_order->user_surveys->first())
+                        ->user_answers->first()
+                        ?->options_data[0]->option_text ?? null;
 
 
             }
@@ -373,12 +407,7 @@ class OrderController extends Controller
             $combined = $orders->merge($quick_orders);
 
             return response()->json($combined, Response::HTTP_OK);
-//            return response()->json($orders, Response::HTTP_OK);
-//            return response()->json(['orders'=>$orders,'quick_orders'=>$quick_orders], Response::HTTP_OK);
-//        }
-
-
-
+        }
 
         foreach($orders as $order) {
             if (
@@ -393,6 +422,23 @@ class OrderController extends Controller
                     )->get();
                 }
             }
+            $order->is_under_video = $order->video_id !== null;
+//            $order->is_quick_order = $order->video_id == null;
+            $order->title = optional(
+                $order->user_surveys?->user_answers->first()?->options[0] ?? null
+            )->option_text;
+//            $order->title =
+//            $order->title = optional(
+//                    $order->user_surveys?->user_answers->first()?->options[0]
+//                )->option_text ?? null;
+//            $order->title = optional(
+//                    $order->user_surveys?->user_answers[0]?->options[0]
+//                )->option_text ?? null;
+
+
+//                optional($quick_order->user_surveys->first())
+//                    ->user_answers->first()
+//                    ?->options_data[0]->option_text ?? null;
         }
 
         return response()->json($orders, Response::HTTP_OK);
@@ -434,12 +480,28 @@ class OrderController extends Controller
         foreach ($order->user_surveys->user_answers as $answer) {
             $options = collect($answer->options_data)->pluck('option_text')->toArray(); // Собираем все option_text в массив
 
+
+            $optionString = implode(',', $options);
+
+            $imageUrls = is_string($answer->image_urls)
+                ? json_decode($answer->image_urls, true)
+                : $answer->image_urls;
+
+            // Пропускаем, если всё пусто
+            if (empty($optionString) && $answer->custom_value === null && empty($imageUrls)) {
+                continue;
+            }
+
             $data[] = [
                 'answer' => [
-                    'question' => $answer->question->text,
+                    'question' => $answer->question->topic,
                     'options' => implode(',', $options), // Объединяем через запятую
                     'custom_value' => $answer->custom_value,
-                    'image_urls' => $answer->image_urls,
+                    'image_urls' => is_string($answer->image_urls)
+                        ? json_decode($answer->image_urls, true)
+                        : $answer->image_urls,
+//                    'comment' => $answer->comment,
+//                    'comment_image' => $answer->comment_image,
                 ]
             ];
         }
@@ -451,8 +513,42 @@ class OrderController extends Controller
         //            }
         //        }
 
+        $comment = null;
+        $comment_image = null;
+        if ($data[0]['answer']['options'] == 'Кухня' && $data[0]['answer']['question'] == 'Тип мебели'){
+            if ($data[1]['answer']['options'] == 'Линейный (прямой)' && $data[1]['answer']['question'] == 'Форма кухни'){
+                $comment = "Линейный (прямой)";
+                $comment_image = "https://mebelplace.kz/storage/files/TJLcmWNCQprkpiXoB8dw75o6pqTh5MXKcCfe3US2.jpg";
+            }
+            else if ($data[1]['answer']['options'] == 'Угловая (Г-образная) кухня' && $data[1]['answer']['question'] == 'Форма кухни'){
+                $comment = "Угловая (Г-образная) кухня";
+                $comment_image = "https://mebelplace.kz/storage/files/ZdmDdAl9WS9jyKPvTXJ0ubiIVSKanSCiE8ARdUVX.jpg";
+            }
+            else if ($data[1]['answer']['options'] == 'П-образная (U-образная)' && $data[1]['answer']['question'] == 'Форма кухни'){
+                $comment = "П-образная (U-образная)";
+                $comment_image = "https://mebelplace.kz/storage/files/TGGnFsv8uvw9N9SwjzMoc0DqEXkuv1XxsIk1Jaju.jpg";
+            }
+            else if ($data[1]['answer']['options'] == 'Параллельная (двухрядная) кухня' && $data[1]['answer']['question'] == 'Форма кухни'){
+                $comment_image = "https://mebelplace.kz/storage/files/SNFGkqvXhzdYxZ5P8JhzPtvFfC9OjLexv95Lv97G.jpg";
+                $comment = "Параллельная (двухрядная) кухня";
+            }
+            else if ($data[1]['answer']['options'] == 'Полуостровная кухня' && $data[1]['answer']['question'] == 'Форма кухни'){
+                $comment_image = "https://mebelplace.kz/storage/files/N9uORLce0bMJlwkSP0Fsh8WCEfKYMlDyCa2ZtAFg.jpg";
+                $comment = "Полуостровная кухня";
+            }
+        }
+        else
+        if ($data[0]['answer']['options'] == 'Шкаф' && $data[0]['answer']['question'] == 'Тип мебели'){
+                $comment_image = "https://mebelplace.kz/storage/files/3zZXVS0hUumyrFZrAqG0T8VoZwhRqINdSf7295sj.jpg";
+                $comment = "Шкаф";
+            }
+
+
 //        dd($order);
         // Теперь вернем отформатированный ответ
+
+
+
         return response()->json([
             'id' => $order->id,
             'user_survey_id' => $order->user_survey_id,
@@ -464,9 +560,13 @@ class OrderController extends Controller
             'master_comment' => $order->master_comment,
             'status_id' => $order->status_id,
             'quick_order_id' => $order->quick_order_id,
+            'is_quick_order' => $order->quick_order_id !== null,
             'is_read' => $order->is_read,
             'created_at' => $order->created_at,
             'updated_at' => $order->updated_at,
+            'comment' => $comment,
+            'comment_image' => $comment_image,
+            'phone' => ($order->status_id == 2 || $order->status_id == 3) ? $order->master->phone ?? null : null,
             'data' => $data,
         ], Response::HTTP_OK);
 
@@ -506,19 +606,70 @@ class OrderController extends Controller
 
         $data = [];
 
-//        return $order->user_surveys[0]->user_answers;
+//        return $order->user_surveys;
         foreach ($order->user_surveys[0]->user_answers as $answer) {
             $options = collect($answer->options_data)->pluck('option_text')->toArray(); // Собираем все option_text в массив
 
+            $optionString = implode(',', $options);
+
+            $imageUrls = is_string($answer->image_urls)
+                ? json_decode($answer->image_urls, true)
+                : $answer->image_urls;
+
+            // Пропускаем, если всё пусто
+            if (empty($optionString) && $answer->custom_value === null && empty($imageUrls)) {
+                continue;
+            }
+
             $data[] = [
                 'answer' => [
-                    'question' => $answer->question->text,
+                    'question' => $answer->question->topic,
+//                    'question' => $answer->question->text,
                     'options' => implode(',', $options), // Объединяем через запятую
                     'custom_value' => $answer->custom_value,
-                    'image_urls' => $answer->image_urls,
+                    'image_urls' => is_string($answer->image_urls)
+                        ? json_decode($answer->image_urls, true)
+                        : $answer->image_urls,
                 ]
             ];
         }
+        $comment = null;
+        $comment_image = null;
+//        print($data[0]['answer']['options']);
+//        print('-------------------------------');
+//        print($data[0]['answer']['question']);
+//        print('-------------------------------');
+//        print($data[1]['answer']['options']);
+//        print('-------------------------------');
+//        print($data[1]['answer']['question']);
+//        print('-------------------------------');
+        if ($data[0]['answer']['options'] == 'Кухня' && $data[0]['answer']['question'] == 'Тип мебели'){
+            if ($data[1]['answer']['options'] == 'Линейный (прямой)' && $data[1]['answer']['question'] == 'Форма кухни'){
+                $comment = "Линейный (прямой)";
+                $comment_image = "https://mebelplace.kz/storage/files/TJLcmWNCQprkpiXoB8dw75o6pqTh5MXKcCfe3US2.jpg";
+            }
+            else if ($data[1]['answer']['options'] == 'Угловая (Г-образная) кухня' && $data[1]['answer']['question'] == 'Форма кухни'){
+                $comment = "Угловая (Г-образная) кухня";
+                $comment_image = "https://mebelplace.kz/storage/files/ZdmDdAl9WS9jyKPvTXJ0ubiIVSKanSCiE8ARdUVX.jpg";
+            }
+            else if ($data[1]['answer']['options'] == 'П-образная (U-образная)' && $data[1]['answer']['question'] == 'Форма кухни'){
+                $comment = "П-образная (U-образная)";
+                $comment_image = "https://mebelplace.kz/storage/files/TGGnFsv8uvw9N9SwjzMoc0DqEXkuv1XxsIk1Jaju.jpg";
+            }
+            else if ($data[1]['answer']['options'] == 'Параллельная (двухрядная) кухня' && $data[1]['answer']['question'] == 'Форма кухни'){
+                $comment_image = "https://mebelplace.kz/storage/files/SNFGkqvXhzdYxZ5P8JhzPtvFfC9OjLexv95Lv97G.jpg";
+                $comment = "Параллельная (двухрядная) кухня";
+            }
+            else if ($data[1]['answer']['options'] == 'Полуостровная кухня' && $data[1]['answer']['question'] == 'Форма кухни'){
+                $comment_image = "https://mebelplace.kz/storage/files/N9uORLce0bMJlwkSP0Fsh8WCEfKYMlDyCa2ZtAFg.jpg";
+                $comment = "Полуостровная кухня";
+            }
+        }
+        else if ($data[0]['answer']['options'] == 'Шкаф' && $data[0]['answer']['question'] == 'Тип мебели'){
+            $comment_image = "https://mebelplace.kz/storage/files/3zZXVS0hUumyrFZrAqG0T8VoZwhRqINdSf7295sj.jpg";
+            $comment = "Шкаф";
+        }
+
         //        foreach ($order->user_surveys->user_answers as $answer) {
         //            echo $answer->question->title; // например, текст вопроса
         //
@@ -538,9 +689,12 @@ class OrderController extends Controller
             'master_price' => $order->master_price,
             'master_time' => $order->master_time,
             'master_comment' => $order->master_comment,
-            'status_id' => $order->status_id,
-            'quick_order_id' => $order->quick_order_id,
-            'is_read' => $order->is_read,
+            'status_id' => 1,
+            'quick_order_id' => $order->id,
+            'is_quick_order' => true,
+            'is_read' => 1,
+            'comment' => $comment,
+            'comment_image' => $comment_image,
             'created_at' => $order->created_at,
             'updated_at' => $order->updated_at,
             'data' => $data,
@@ -586,14 +740,25 @@ class OrderController extends Controller
             'video_id' => 'required|integer|exists:videos,id',
             'master_price' => 'required|string|min:0',
             'master_time' => 'required|string|min:1',
-            'status_id' => 'required|integer|exists:order_statuses,id',
+//            'status_id' => 'required|integer|exists:order_statuses,id',
         ]);
 
+
         if ($validatedData->fails()) {
-            return response()->json($validatedData->errors(), Response::HTTP_BAD_REQUEST);
+            $errorText = implode("\n", $validatedData->errors()->all());
+
+            return response()->json([
+                'message' => 'Данные недопустимы.'.$errorText,
+                'errors' => $errorText, // это строка
+            ], 422);
         }
 
-        $order = Order::create($validatedData->validated());
+        $data = $validatedData->validated();
+
+        // Устанавливаем статус вручную (например, 1 — "новый")
+        $data['status_id'] = 1;
+
+        $order = Order::create($data);
 
         return response()->json($order, Response::HTTP_CREATED);
     }
@@ -625,37 +790,72 @@ class OrderController extends Controller
      *     @OA\Response(response=400, description="Bad request")
      * )
      */
-    public function store_quick_order(Request $request)
+    public function store_quick_order(Request $request,$quick_order_id)
     {
 //         return $request->all();
+        // Валидация тела запроса
         $validatedData = Validator::make($request->all(), [
-            'quick_order_id' => 'required|integer|exists:quick_orders,id',
+            'master_price' => 'required|integer',
+            'master_time' => 'required|string',
         ]);
+
+
         if ($validatedData->fails()) {
-            return response()->json($validatedData->errors(), Response::HTTP_BAD_REQUEST);
+            $errorText = implode("\n", $validatedData->errors()->all());
+
+            return response()->json([
+                'message' => 'Данные недопустимы.'.$errorText,
+                'errors' => $errorText, // это строка
+            ], 422);
+        }
+
+        // Отдельная валидация параметра из URL
+        $checkQuickOrder = Validator::make(
+            ['quick_order_id' => $quick_order_id],
+            ['quick_order_id' => 'required|integer|exists:quick_orders,id']
+        );
+
+
+        if ($validatedData->fails()) {
+            $errorText = implode("\n", $validatedData->errors()->all());
+
+            return response()->json([
+                'message' => 'Данные недопустимы.'.$errorText,
+                'errors' => $errorText, // это строка
+            ], 422);
         }
 //        return QuickOrder::find($request->quick_order_id);
-        $quick_order = QuickOrder::find($request->quick_order_id);
+        $quick_order = QuickOrder::find($quick_order_id);
+
+        $master = auth('sanctum')->user(); // убедись что есть связь master()
+
+        $requiredAmount = Variable::where('id',13)->first()['value']; // например, сколько нужно списать
+
+        if ($master->wallet < $requiredAmount) {
+            return response()->json(['message' => 'Недостаточно средств для ответа.'], 200);
+        }
+
+        // Списываем деньги
+        $master->wallet -= $requiredAmount;
+        $master->save();
 
         $order = Order::create(
             [
                 'user_survey_id' => $quick_order->user_survey_id,
-                'user_id' => auth('sanctum')->id(),
-                'status_id' => 9,
-                'quick_order_id' => $request->quick_order_id,
+                'user_id' => $quick_order->user_id,
+                'master_id' => auth('sanctum')->id(),
+                'master_price' => $request->master_price,
+                'master_time' => $request->master_time,
+                'status_id' => 2,
+                'quick_order_id' => $quick_order_id,
             ]
         );
         $quick_order->masters_left -= 1;
         $quick_order->save();
+        if ($quick_order->masters_left == 0){
+            $quick_order->delete();
+        }
         return response()->json($order, Response::HTTP_CREATED);
-//        return $quick_order;
-//        $quick_order->
-//        return null;
-
-
-//        $order = Order::create($validatedData->validated());
-//
-//        return response()->json($order, Response::HTTP_CREATED);
     }
 
     /**
@@ -675,10 +875,9 @@ class OrderController extends Controller
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
-     *             @OA\Property(property="status_id", type="integer", description="Updated status ID"),
+     *             @OA\Property(property="status", type="integer", description="Updated status ID (1 or 0)"),
      *             @OA\Property(property="master_price", type="number", format="float", description="Updated master price"),
      *             @OA\Property(property="master_time", type="integer", description="Updated master time"),
-     *             @OA\Property(property="video_id", type="integer", description="Updated video ID")
      *         )
      *     ),
      *     @OA\Response(
@@ -697,33 +896,92 @@ class OrderController extends Controller
         }
 
         $validatedData = Validator::make($request->all(), [
-            'status_id' => 'sometimes|integer|exists:order_statuses,id',
-            'master_price' => 'sometimes|numeric|min:0',
-            'master_time' => 'sometimes|integer|min:1',
-            'video_id' => 'sometimes|integer|exists:videos,id',
+//            'status_id' => 'sometimes|integer|exists:order_statuses,id',
+            'status' => 'required|integer',
+            'master_price' => 'sometimes|nullable|integer|min:0',
+            'master_time' => 'sometimes|nullable|string',
+//            'video_id' => 'sometimes|integer|exists:videos,id',
         ]);
 
+
         if ($validatedData->fails()) {
-            return response()->json($validatedData->errors(), Response::HTTP_BAD_REQUEST);
+            $errorText = implode("\n", $validatedData->errors()->all());
+
+            return response()->json([
+                'message' => 'Данные недопустимы.'.$errorText,
+                'errors' => $errorText, // это строка
+            ], 422);
         }
 
         $data = $validatedData->validated();
         // Если статус сменился на 4 — проверка баланса
-        if (isset($data['status_id']) && $data['status_id'] == 6) {
-            $master = $order->master; // убедись что есть связь master()
 
-            $requiredAmount = 1000; // например, сколько нужно списать
+        if (isset($data['status'])) {
+            $current = $order->status_id;
+            $status = $data['status'];
 
-            if ($master->balance < $requiredAmount) {
-                return response()->json(['message' => 'Недостаточно средств для принятия заказа'], 402);
+            // Пример переходов (можешь вынести в конфиг или таблицу)
+            $status_true = [
+                1 => 2,
+//                2 => 4,
+//                4 => 6,
+//                6 => 7,
+            ];
+            $status_false = [
+                1 => 3,
+//                2 => 4,
+//                4 => 6,
+//                6 => 7,
+            ];
+
+            if($status == 1){
+                if ($order->status_id == 1) {
+                    $master = $order->master; // убедись что есть связь master()
+
+                    $requiredAmount = Variable::where('id',13)->first()['value']; // например, сколько нужно списать
+
+//                    print($master->wallet);
+//                    print($requiredAmount);
+                    if ($master->wallet < $requiredAmount) {
+                        return response()->json(['message' => 'Недостаточно средств для принятия заказа'], 200);
+                    }
+
+                    // Списываем деньги
+                    $master->wallet -= $requiredAmount;
+                    $master->save();
+                }
+
+                if (!isset($status_true[$current])) {
+                    return response()->json($order, Response::HTTP_OK);
+                }
+                $data['status_id'] = $status_true[$current];
+            }else
+            if($status == 0){
+
+                if (!isset($status_false[$current])) {
+                    return response()->json($order, Response::HTTP_OK);
+                }
+                $data['status_id'] = $status_false[$current];
             }
-
-            // Списываем деньги
-            $master->balance -= $requiredAmount;
-            $master->save();
+//            if (isset($statusFlow[$current])) {
+//                $data['status_id'] = $statusFlow[$current];
+//            }
         }
+
         // Обновляем только те поля, которые были переданы в запросе
-        $order->update(array_filter($validatedData->validated())); // Фильтруем пустые значения
+        $updateData = [];
+
+        if (array_key_exists('master_price', $data)) {
+            $updateData['master_price'] = $data['master_price'];
+        }
+        if (array_key_exists('master_time', $data)) {
+            $updateData['master_time'] = $data['master_time'];
+        }
+        if (array_key_exists('status_id', $data)) {
+            $updateData['status_id'] = $data['status_id'];
+        }
+
+        $order->update($updateData);
 
         return response()->json($order, Response::HTTP_OK);
     }
@@ -752,6 +1010,36 @@ class OrderController extends Controller
 
         if (!$order) {
             return response()->json(['message' => 'Order not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        $order->delete();
+        return response()->json(null, Response::HTTP_NO_CONTENT);
+    }
+
+    /**
+     * @OA\Delete(
+     *     path="/api/quick_orders/{id}",
+     *     tags={"Orders"},
+     *     security={{"sanctum": {}}},
+     *     summary="Delete an quick_orders",
+     *     description="Deletes an quick_orders by ID",
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         description="ID of the quick_orders to delete",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(response=204, description="quick_orders deleted"),
+     *     @OA\Response(response=404, description="quick_orders not found")
+     * )
+     */
+    public function destroy_quick_order($id)
+    {
+        $order = QuickOrder::find($id);
+
+        if (!$order) {
+            return response()->json(['message' => 'quick_orders not found'], Response::HTTP_NOT_FOUND);
         }
 
         $order->delete();

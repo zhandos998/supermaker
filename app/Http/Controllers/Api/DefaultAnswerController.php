@@ -224,7 +224,12 @@ class DefaultAnswerController extends Controller
         });
 
         if ($validatedData->fails()) {
-            return response()->json($validatedData->errors(), Response::HTTP_BAD_REQUEST);
+            $errorText = implode("\n", $validatedData->errors()->all());
+
+            return response()->json([
+                'message' => 'Данные недопустимы.'.$errorText,
+                'errors' => $errorText, // это строка
+            ], 422);
         }
 
         $validatedData = $validatedData->validated();
@@ -370,7 +375,12 @@ class DefaultAnswerController extends Controller
         ]);
 
         if ($validated->fails()) {
-            return response()->json($validated->errors(), Response::HTTP_BAD_REQUEST);
+            $errorText = implode("\n", $validated->errors()->all());
+
+            return response()->json([
+                'message' => 'Данные недопустимы.'.$errorText,
+                'errors' => $errorText, // это строка
+            ], 422);
         }
 
         $data = $validated->validated();
@@ -528,7 +538,12 @@ class DefaultAnswerController extends Controller
         ]);
 
         if ($validatedData->fails()) {
-            return response()->json($validatedData->errors(), Response::HTTP_BAD_REQUEST);
+            $errorText = implode("\n", $validatedData->errors()->all());
+
+            return response()->json([
+                'message' => 'Данные недопустимы.'.$errorText,
+                'errors' => $errorText, // это строка
+            ], 422);
         }
 
         $validatedData = $validatedData->validated();

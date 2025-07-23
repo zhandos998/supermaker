@@ -51,7 +51,7 @@ class User extends Authenticatable
 
     public function getRoleAttribute()
     {
-        return $this->roles()->first()?->slug;
+        return $this->roles()->first()?->slug ?? 'user';
     }
 
     // Связь "многие ко многим" с ролями

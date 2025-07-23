@@ -9,10 +9,14 @@ return [
             ],
 
             'routes' => [
-                /*
-                 * Route for accessing api documentation interface
-                 */
                 'api' => 'api/documentation',
+                'docs' => 'docs',
+                'middleware' => [
+                    'asset' => [],
+                    'api' => [], // 👈 сначала авторизация, потом проверка роли
+                    'docs' => [],
+                    'oauth2_callback' => [],
+                ],
             ],
             'paths' => [
                 /*
