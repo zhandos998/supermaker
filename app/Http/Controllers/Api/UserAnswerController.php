@@ -28,46 +28,7 @@ use Illuminate\Support\Arr;
 
 class UserAnswerController extends Controller
 {
-    /**
-     * @OA\Post(
-     *     path="/api/user_answers/SetUserAnswerImage",
-     *     tags={"UserAnswers"},
-     *     security={{"sanctum": {}}},
-     *     summary="Upload a single image",
-     *     operationId="uploadImage",
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\MediaType(
-     *             mediaType="multipart/form-data",
-     *             @OA\Schema(
-     *                 required={"image"},
-     *                 @OA\Property(
-     *                     property="image",
-     *                     type="string",
-     *                     format="binary",
-     *                     description="Single image file"
-     *                 )
-     *             )
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=201,
-     *         description="Image uploaded successfully",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="message", type="string", example="Image uploaded successfully"),
-     *             @OA\Property(property="image_path", type="string", format="uri", example="https://example.com/storage/user_answers/images/image1.jpg")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=400,
-     *         description="Validation error",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="message", type="string", example="The image field is required."),
-     *             @OA\Property(property="errors", type="object")
-     *         )
-     *     )
-     * )
-     */
+
     public function SetUserAnswerImage(Request $request)
     {
         // Проверка, что данные приходят
@@ -104,61 +65,6 @@ class UserAnswerController extends Controller
         ], Response::HTTP_CREATED);
     }
 
-    /**
-     * @OA\Post(
-     *     path="/api/user_answers/GetUserAnswersByVideoID",
-     *     tags={"UserAnswers"},
-     *     security={{"sanctum": {}}},
-     *     summary="Get user answers by video ID",
-     *     operationId="getUserAnswersByVideoID",
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\JsonContent(
-     *             @OA\Property(property="video_id", type="integer", description="ID of the video", example=1),
-     *             @OA\Property(property="user_id", type="integer", description="ID of the user (optional)"),
-     *             @OA\Property(property="survey_id", type="integer", description="ID of the survey", example=1)
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Survey with user answers fetched successfully",
-     *         @OA\JsonContent(
-     *             @OA\Property(
-     *                 property="id",
-     *                 type="integer",
-     *                 example=1
-     *             ),
-     *             @OA\Property(
-     *                 property="questions",
-     *                 type="array",
-     *                 @OA\Items(
-     *                     type="object",
-     *                     @OA\Property(property="id", type="integer"),
-     *                     @OA\Property(property="question_text", type="string"),
-     *                     @OA\Property(
-     *                         property="options",
-     *                         type="array",
-     *                         @OA\Items(type="object", @OA\Property(property="id", type="integer"), @OA\Property(property="option_text", type="string"))
-     *                     ),
-     *                     @OA\Property(property="custom_value", type="string"),
-     *                     @OA\Property(
-     *                         property="image_urls",
-     *                         type="array",
-     *                         @OA\Items(type="string", format="uri", description="Image file URL")
-     *                     )
-     *                 )
-     *             )
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=404,
-     *         description="Survey not found",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="message", type="string", example="Survey not found")
-     *         )
-     *     )
-     * )
-     */
     public function GetUserAnswersByVideoID(Request $request)
     {
         // Получаем параметры из запроса
@@ -205,19 +111,6 @@ class UserAnswerController extends Controller
         return response()->json($survey, Response::HTTP_OK);
     }
 
-    /**
-     * @OA\Get(
-     *     path="/api/user_answers",
-     *     tags={"UserAnswers"},
-     *     security={{"sanctum": {}}},
-     *     summary="Get a list of user answers",
-     *     description="Returns a list of all user answers.",
-     *     @OA\Response(
-     *         response=200,
-     *         description="Successful operation"
-     *     )
-     * )
-     */
     public function index()
     {
         // Загружаем данные с опциями
@@ -230,49 +123,6 @@ class UserAnswerController extends Controller
         return response()->json($userAnswers, Response::HTTP_OK);
     }
 
-    /**
-     * @OA\Post(
-     *     path="/api/user_answers",
-     *     tags={"UserAnswers"},
-     *     security={{"sanctum": {}}},
-     *     summary="Store answers without images",
-     *     operationId="storeAnswersWithoutImages",
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\MediaType(
-     *             mediaType="application/json",
-     *             @OA\Schema(
-     *                 type="object",
-     *                 required={"survey_id", "answers"},
-     *                 @OA\Property(property="survey_id", type="integer", example=1),
-     *                 @OA\Property(property="video_id", type="integer", example=107),
-     *                 @OA\Property(
-     *                     property="answers",
-     *                     type="array",
-     *                     description="Array of answers",
-     *                     @OA\Items(
-     *                         type="object",
-     *                         required={"question_id"},
-     *                         @OA\Property(property="question_id", type="integer", example=2),
-     *                         @OA\Property(property="option_ids", type="array", @OA\Items(type="integer"), example={2}),
-     *                         @OA\Property(property="custom_value", type="string", example="string"),
-     *                         @OA\Property(property="image_urls", type="array", @OA\Items(type="string"), example={
-     *                             "storage/user_answers/images/xfrNqETCemFCWUjMiLSkfamrQmBqVuRyMKfeRsG9.png"
-     *                         })
-     *                     )
-     *                 )
-     *             )
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=201,
-     *         description="Answers successfully saved",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="message", type="string", example="Answers saved successfully")
-     *         )
-     *     )
-     * )
-     */
     public function store(Request $request)
     {
         // Валидация данных
@@ -366,49 +216,6 @@ class UserAnswerController extends Controller
         return response()->json(['message' => 'Answers saved successfully','user_survey_id'=>$user_survey->id], Response::HTTP_CREATED);
     }
 
-    /**
-     * @OA\Post(
-     *     path="/api/user_answers/AddUserAnswersWithImages",
-     *     tags={"UserAnswers"},
-     *     security={{"sanctum": {}}},
-     *     summary="Store answers with images",
-     *     operationId="storeAnswersWithImages 1",
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\MediaType(
-     *             mediaType="application/json",
-     *             @OA\Schema(
-     *                 type="object",
-     *                 required={"survey_id", "answers"},
-     *                 @OA\Property(property="survey_id", type="integer", example=1),
-     *                 @OA\Property(property="video_id", type="integer", example=107),
-     *                 @OA\Property(
-     *                     property="answers",
-     *                     type="array",
-     *                     description="Array of answers",
-     *                     @OA\Items(
-     *                         type="object",
-     *                         required={"question_id"},
-     *                         @OA\Property(property="question_id", type="integer", example=2),
-     *                         @OA\Property(property="option_ids", type="array", @OA\Items(type="integer"), example={2}),
-     *                         @OA\Property(property="custom_value", type="string", example="string"),
-     *                         @OA\Property(property="image_urls", type="array", @OA\Items(type="string"), example={
-     *                             "storage/user_answers/images/xfrNqETCemFCWUjMiLSkfamrQmBqVuRyMKfeRsG9.png"
-     *                         })
-     *                     )
-     *                 )
-     *             )
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=201,
-     *         description="Answers successfully saved",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="message", type="string", example="Answers saved successfully")
-     *         )
-     *     )
-     * )
-     */
     public function AddUserAnswersWithImages(Request $request)
     {
         // Если answers — строка, пытаемся превратить в массив
@@ -428,6 +235,9 @@ class UserAnswerController extends Controller
 //        print_r($request->all());
         $validated = Validator::make($request->all(), [
             'survey_id' => 'required|exists:surveys,id',
+            'city_id' => 'nullable|integer|exists:cities,id',
+            'region_id' => 'nullable|integer|exists:regions,id',
+            'country_id' => 'nullable|integer|exists:countries,id',
             'video_id' => 'nullable|exists:videos,id',
             'answers' => 'required|array',
             'answers.*.question_id' => 'required|exists:questions,id',
@@ -461,34 +271,6 @@ class UserAnswerController extends Controller
         }
 
         $data = $validated->validated();
-
-//        if (!is_null($validatedData['video_id'])){
-//            $video = Video::where('id',$validatedData['video_id'])
-//                ->first();
-//            // 🔁 Создание связанного Order
-//            $order = Order::create([
-//                'user_id' => auth()->id(),
-//                'user_survey_id' => $user_survey->id,
-//                'master_id' => $video->user_id,
-//                'video_id' => $validatedData['video_id'],
-//                'status_id' => 1,
-//            ]);
-//        }
-//        else{
-//            $quickOrder = QuickOrder::create([
-//                'user_id' => auth()->id(),
-//                'group_iter' => 0,
-//                'refresh_time' => Carbon::now(),
-//                'responded' => false,
-//            ]);
-//            UserSurvey::where('id',$user_survey->id)
-//                ->update([
-//                    'quick_order_id'=>$quickOrder->id,
-//                ]);
-//
-//            // Отправляем заказы мастерам
-//            app(OrderController::class)->SendQuickOrdersByUserId($quickOrder->user_id);
-//        }
 
         // Создаем запись UserSurvey
         $userSurvey = UserSurvey::create([
@@ -548,16 +330,12 @@ class UserAnswerController extends Controller
                 'group_iter' => 0,
                 'refresh_time' => Carbon::now(),
                 'responded' => false,
+                'city_id' => Arr::get($data, 'city_id', 66),
+                'region_id' => Arr::get($data, 'region_id', 4),
+                'country_id' => Arr::get($data, 'country_id', 1),
                 'masters_left' => Variable::where('id',14)->first()['value'],
             ]);
 
-//            Order::create([
-//                'user_id' => auth()->id(),
-//                'master_id' => null,
-//                'status_id' => 8, // Статус "Заказы"
-//                'quick_order_id' => $quickOrder->id,
-//                'user_survey_id' => $userSurvey->id,
-//            ]);
             UserSurvey::where('id',$userSurvey->id)
                 ->update([
                     'quick_order_id'=>$quickOrder->id,
@@ -573,24 +351,6 @@ class UserAnswerController extends Controller
         ], Response::HTTP_CREATED);
     }
 
-    /**
-     * @OA\Get(
-     *     path="/api/user_answers/{id}",
-     *     tags={"UserAnswers"},
-     *     security={{"sanctum": {}}},
-     *     summary="Get a user answer by ID",
-     *     description="Returns a single user answer",
-     *     @OA\Parameter(
-     *         name="id",
-     *         in="path",
-     *         description="ID of the user answer",
-     *         required=true,
-     *         @OA\Schema(type="integer")
-     *     ),
-     *     @OA\Response(response=200, description="Successful operation"),
-     *     @OA\Response(response=404, description="User answer not found")
-     * )
-     */
     public function show($id)
     {
         $userAnswer = UserAnswer::find($id);
@@ -602,73 +362,6 @@ class UserAnswerController extends Controller
         return response()->json($userAnswer, Response::HTTP_OK);
     }
 
-    /**
-     * @OA\Put(
-     *     path="/api/user_answers/{id}",
-     *     tags={"UserAnswers"},
-     *     security={{"sanctum": {}}},
-     *     summary="Update user answers",
-     *     description="Updates existing user answers for a given survey and video",
-     *     @OA\Parameter(
-     *         name="id",
-     *         in="path",
-     *         description="ID of the UserSurvey to be updated",
-     *         required=true,
-     *         @OA\Schema(type="integer")
-     *     ),
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\JsonContent(
-     *             required={"survey_id", "answers"},
-     *             @OA\Property(property="survey_id", type="integer", example="1", description="ID of the related survey"),
-     *             @OA\Property(property="video_id", type="integer", nullable=true, description="ID of the related video"),
-     *             @OA\Property(property="answers", type="array", description="Array of answers to be updated",
-     *                 @OA\Items(
-     *                     type="object",
-     *                     required={"question_id"},
-     *                     @OA\Property(property="question_id", type="integer", description="ID of the related question"),
-     *                     @OA\Property(
-     *                         property="option_ids",
-     *                         type="array",
-     *                         @OA\Items(type="integer"),
-     *                         nullable=true,
-     *                         description="Array of selected option IDs"
-     *                     ),
-     *                     @OA\Property(property="custom_value", type="string", nullable=true, description="Custom answer value (if any)"),
-     *                     @OA\Property(
-     *                         property="image_urls",
-     *                         type="array",
-     *                         nullable=true,
-     *                         description="Array of image files (optional)",
-     *                         @OA\Items(type="string", format="binary")
-     *                     )
-     *                 )
-     *             )
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="User answers updated successfully",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="message", type="string", example="Survey and answers updated successfully")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=404,
-     *         description="UserSurvey not found",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="error", type="string", example="UserSurvey not found")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=400,
-     *         description="Bad request due to validation errors or incorrect data",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="errors", type="object", example={"survey_id": {"The survey_id field is required."}})
-     *         )
-     *     )
-     * )
-     */
     public function update(Request $request, $id)
     {
         // Валидация входных данных
@@ -746,24 +439,6 @@ class UserAnswerController extends Controller
         return response()->json(['message' => 'Survey and answers updated successfully'], Response::HTTP_OK);
     }
 
-    /**
-     * @OA\Delete(
-     *     path="/api/user_answers/{id}",
-     *     tags={"UserAnswers"},
-     *     security={{"sanctum": {}}},
-     *     summary="Delete a user answer",
-     *     description="Deletes a user answer by ID",
-     *     @OA\Parameter(
-     *         name="id",
-     *         in="path",
-     *         description="ID of the user answer to delete",
-     *         required=true,
-     *         @OA\Schema(type="integer")
-     *     ),
-     *     @OA\Response(response=204, description="User answer deleted successfully"),
-     *     @OA\Response(response=404, description="User answer not found")
-     * )
-     */
     public function destroy($id)
     {
         $userAnswer = UserAnswer::find($id);

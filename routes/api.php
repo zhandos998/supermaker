@@ -81,8 +81,6 @@ Route::middleware('auth:sanctum')->post('quick_orders/{quick_order_id}', [OrderC
 // ----------------------------------------------------------------------------------------------------
 
 Route::middleware('auth:sanctum')->resource('users', UserController::class);
-Route::middleware('auth:sanctum')->resource('cities', CityController::class);
-Route::middleware('auth:sanctum')->resource('countries', CountryController::class);
 Route::middleware('auth:sanctum')->resource('payments', PaymentController::class);
 Route::middleware('auth:sanctum')->resource('payment_statuses', PaymentStatusController::class);
 Route::middleware('auth:sanctum')->resource('stores', StoreController::class);
@@ -120,3 +118,7 @@ Route::middleware('auth:sanctum')->resource('user_answers', UserAnswerController
 Route::middleware('auth:sanctum')->resource('subscriptions', SubscriptionController::class);
 Route::middleware('auth:sanctum')->resource('files', FileController::class);
 Route::middleware('auth:sanctum')->resource('likes', LikeController::class);
+
+Route::get('/countries', [CountryController::class, 'index']);
+Route::get('/regions', [RegionController::class, 'index']);     // ?country_id=1
+Route::get('/cities', [CityController::class, 'index']);

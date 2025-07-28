@@ -8,6 +8,7 @@
         "php": "^8.2",
         "darkaonline/l5-swagger": "^8.6",
         "intervention/image": "^3.11",
+        "kreait/laravel-firebase": "^6.1",
         "laravel/framework": "^11.9",
         "laravel/sanctum": "^4.0",
         "laravel/telescope": "^5.7",
