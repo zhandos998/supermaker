@@ -260,7 +260,7 @@ class AuthController extends Controller
         $user->save();
 
         // Отправка кода через SMS (используем вашу функцию отправки SMS)
-//        $this->funcSendVerificationCode($phone, $resetCode);
+        $this->funcSendVerificationCode($phone, $resetCode);
 
         return response()->json(['message' => 'Код для сброса пароля отправлен на ваш номер телефона.']);
     }
